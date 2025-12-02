@@ -18,6 +18,7 @@ from app.providers.llm import llm_client
 from app.schemas.base import BaseResponse
 from app.schemas.chat import ChatMessage, ChatRequest, ChatResponse, UsageInfo
 from app.services import conversation as conversation_service
+from app.services.models import fetch_models_from_litellm
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -32,114 +33,20 @@ class ModelInfo(BaseModel):
     context_window: int | None = None
     input_price: float | None = None  # per million tokens
     output_price: float | None = None  # per million tokens
-    tier: str | None = None  # "free", "pro", "enterprise"
-    model_page_url: str | None = None
+    tier: str | None = None  # "free", "standard", "pro", "enterprise"
     pricing_url: str | None = None
     terms_url: str | None = None
     privacy_url: str | None = None
     website_url: str | None = None
+    supports_vision: bool | None = None
+    supports_function_calling: bool | None = None
+    supports_streaming: bool | None = None
+    max_output_tokens: int | None = None
 
 
 class ModelsResponse(BaseModel):
     """Models list response."""
     models: list[ModelInfo]
-
-
-# Available models configuration - must match litellm-config.yaml
-AVAILABLE_MODELS = [
-    # Google Gemini Models
-    ModelInfo(
-        id="gemini-2.0-flash",
-        name="Gemini 2.0 Flash",
-        provider="google",
-        description="Fast and efficient model for most tasks with multimodal capabilities",
-        context_window=1000000,
-        input_price=0.075,
-        output_price=0.30,
-        tier="free",
-        model_page_url="https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash",
-        pricing_url="https://ai.google.dev/pricing",
-        terms_url="https://policies.google.com/terms",
-        privacy_url="https://policies.google.com/privacy",
-        website_url="https://ai.google.dev",
-    ),
-    ModelInfo(
-        id="gemini-1.5-pro",
-        name="Gemini 1.5 Pro",
-        provider="google",
-        description="Most capable Gemini model for complex reasoning and analysis",
-        context_window=2000000,
-        input_price=1.25,
-        output_price=5.00,
-        tier="pro",
-        model_page_url="https://ai.google.dev/gemini-api/docs/models#gemini-1.5-pro",
-        pricing_url="https://ai.google.dev/pricing",
-        terms_url="https://policies.google.com/terms",
-        privacy_url="https://policies.google.com/privacy",
-        website_url="https://ai.google.dev",
-    ),
-    ModelInfo(
-        id="gemini-1.5-flash",
-        name="Gemini 1.5 Flash",
-        provider="google",
-        description="Balanced speed and capability for everyday tasks",
-        context_window=1000000,
-        input_price=0.075,
-        output_price=0.30,
-        tier="free",
-        model_page_url="https://ai.google.dev/gemini-api/docs/models#gemini-1.5-flash",
-        pricing_url="https://ai.google.dev/pricing",
-        terms_url="https://policies.google.com/terms",
-        privacy_url="https://policies.google.com/privacy",
-        website_url="https://ai.google.dev",
-    ),
-    # Groq Models
-    ModelInfo(
-        id="llama-3.3-70b",
-        name="Llama 3.3 70B",
-        provider="groq",
-        description="Powerful open-source model via Groq with fast inference",
-        context_window=128000,
-        input_price=0.59,
-        output_price=0.79,
-        tier="pro",
-        model_page_url="https://console.groq.com/docs/models",
-        pricing_url="https://groq.com/pricing",
-        terms_url="https://groq.com/terms-of-use",
-        privacy_url="https://groq.com/privacy-policy",
-        website_url="https://groq.com",
-    ),
-    ModelInfo(
-        id="llama-3.1-8b",
-        name="Llama 3.1 8B",
-        provider="groq",
-        description="Fast lightweight model via Groq for simple tasks",
-        context_window=128000,
-        input_price=0.05,
-        output_price=0.08,
-        tier="free",
-        model_page_url="https://console.groq.com/docs/models",
-        pricing_url="https://groq.com/pricing",
-        terms_url="https://groq.com/terms-of-use",
-        privacy_url="https://groq.com/privacy-policy",
-        website_url="https://groq.com",
-    ),
-    ModelInfo(
-        id="mixtral-8x7b",
-        name="Mixtral 8x7B",
-        provider="groq",
-        description="Mixture of experts model via Groq with excellent performance",
-        context_window=32768,
-        input_price=0.24,
-        output_price=0.24,
-        tier="free",
-        model_page_url="https://console.groq.com/docs/models",
-        pricing_url="https://groq.com/pricing",
-        terms_url="https://groq.com/terms-of-use",
-        privacy_url="https://groq.com/privacy-policy",
-        website_url="https://groq.com",
-    ),
-]
 
 
 @router.get("/models")
@@ -149,14 +56,27 @@ async def get_models(
     """
     Get available models for chat.
 
+    Fetches model information from LiteLLM proxy.
     Requires authentication.
     """
     ctx = get_context()
     ctx.user_id = current_user.id
 
+    # Fetch models from LiteLLM
+    models_data = await fetch_models_from_litellm()
+
+    if not models_data:
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to fetch models from LLM provider"
+        )
+
+    # Convert to ModelInfo objects
+    models = [ModelInfo(**model) for model in models_data]
+
     return BaseResponse(
         trace_id=ctx.trace_id,
-        data=ModelsResponse(models=AVAILABLE_MODELS),
+        data=ModelsResponse(models=models),
     )
 
 
