@@ -73,6 +73,9 @@ class LLMClient:
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        presence_penalty: float | None = None,
         **kwargs: Any,
     ) -> ChatCompletionResponse:
         """
@@ -83,6 +86,9 @@ class LLMClient:
             model: Model to use (defaults to default_model)
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
+            top_p: Nucleus sampling parameter
+            frequency_penalty: Frequency penalty for token repetition
+            presence_penalty: Presence penalty for new topics
             **kwargs: Additional parameters
 
         Returns:
@@ -98,8 +104,14 @@ class LLMClient:
             "stream": False,
             **kwargs,
         }
-        if max_tokens:
+        if max_tokens is not None:
             payload["max_tokens"] = max_tokens
+        if top_p is not None:
+            payload["top_p"] = top_p
+        if frequency_penalty is not None:
+            payload["frequency_penalty"] = frequency_penalty
+        if presence_penalty is not None:
+            payload["presence_penalty"] = presence_penalty
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             # Add tracing if enabled
@@ -145,6 +157,9 @@ class LLMClient:
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        presence_penalty: float | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """
@@ -155,6 +170,9 @@ class LLMClient:
             model: Model to use (defaults to default_model)
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
+            top_p: Nucleus sampling parameter
+            frequency_penalty: Frequency penalty for token repetition
+            presence_penalty: Presence penalty for new topics
             **kwargs: Additional parameters
 
         Yields:
@@ -170,8 +188,14 @@ class LLMClient:
             "stream": True,
             **kwargs,
         }
-        if max_tokens:
+        if max_tokens is not None:
             payload["max_tokens"] = max_tokens
+        if top_p is not None:
+            payload["top_p"] = top_p
+        if frequency_penalty is not None:
+            payload["frequency_penalty"] = frequency_penalty
+        if presence_penalty is not None:
+            payload["presence_penalty"] = presence_penalty
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream(

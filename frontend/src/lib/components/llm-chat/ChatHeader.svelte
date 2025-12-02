@@ -74,7 +74,7 @@
 
 	<div class="flex items-center gap-2">
 		<!-- Sync Status -->
-		<Badge variant="outline" class="gap-1.5">
+		<!-- <Badge variant="outline" class="gap-1.5">
 			{#if syncStatus === 'syncing'}
 				<RefreshCw class="size-3 animate-spin" />
 			{:else if syncStatus === 'synced'}
@@ -83,10 +83,10 @@
 				<span class="size-2 rounded-full bg-red-500"></span>
 			{/if}
 			<span class="text-xs">{getSyncStatusText(syncStatus)}</span>
-		</Badge>
+		</Badge> -->
 
 		<!-- Action Buttons -->
-		<Button variant="ghost" size="icon-sm" onclick={onRefresh} {disabled} title="Refresh">
+		<!-- <Button variant="ghost" size="icon-sm" onclick={onRefresh} {disabled} title="Refresh">
 			<RefreshCw class="size-4" />
 		</Button>
 
@@ -102,7 +102,7 @@
 			{:else}
 				<Copy class="size-4" />
 			{/if}
-		</Button>
+		</Button> -->
 
 		<!-- Settings Popover -->
 		<Popover.Root>

@@ -16,8 +16,8 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | LiteLLM Proxy | ✅ Done | Running on port 4000, UI available |
-| Frontend (SvelteKit) | 🟡 In Progress | Svelte 5 + Tailwind v4 + shadcn-svelte |
-| Backend (FastAPI) | 🟡 In Progress | Auth + Chat API done |
+| Frontend (SvelteKit) | ✅ Done | Svelte 5 + Tailwind v4 + shadcn-svelte (Phase 1 Complete) |
+| Backend (FastAPI) | ✅ Done | Auth + Chat API (Phase 1 Complete) |
 | PostgreSQL | ✅ Done | Running in docker |
 | Redis | ✅ Done | Running for LiteLLM cache |
 | ChromaDB | ❌ Not Started | - |
@@ -86,9 +86,17 @@
 - [x] Create ChatWindow component
 - [x] Implement message input component
 - [x] Implement message display (markdown support)
-- [ ] Add code syntax highlighting
+- [x] Add code syntax highlighting
 - [x] Connect frontend to backend chat API
 - [x] Test end-to-end chat flow
+
+### 1.6 Chat Settings UI (Frontend)
+- [x] Create ChatSettings component
+- [x] Add model selector dropdown (6 models: Gemini + Groq)
+- [x] Add temperature slider (0.0 - 2.0)
+- [x] Add max tokens input (optional, 100-4096)
+- [x] Integrate settings with chat API request
+- [x] Test model switching and parameter changes
 
 **Phase 1 Deliverable**: User can register, login, and chat with AI
 

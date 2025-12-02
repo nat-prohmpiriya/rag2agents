@@ -12,6 +12,10 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = None
     model: str | None = None  # Override default model
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(default=None, ge=1, le=128000)
+    top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+    frequency_penalty: float = Field(default=0.0, ge=0.0, le=2.0)
+    presence_penalty: float = Field(default=0.0, ge=0.0, le=2.0)
     stream: bool = False
 
     model_config = ConfigDict(
@@ -19,6 +23,9 @@ class ChatRequest(BaseModel):
             "example": {
                 "message": "Hello, how are you?",
                 "conversation_id": "conv_123",
+                "temperature": 0.7,
+                "max_tokens": 4096,
+                "top_p": 1.0,
                 "stream": False,
             }
         }

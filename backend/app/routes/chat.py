@@ -186,6 +186,10 @@ async def chat(
             messages=messages,
             model=data.model,
             temperature=data.temperature,
+            max_tokens=data.max_tokens,
+            top_p=data.top_p,
+            frequency_penalty=data.frequency_penalty,
+            presence_penalty=data.presence_penalty,
         )
 
         # Build response
@@ -241,6 +245,10 @@ async def chat_stream(
                 messages=messages,
                 model=data.model,
                 temperature=data.temperature,
+                max_tokens=data.max_tokens,
+                top_p=data.top_p,
+                frequency_penalty=data.frequency_penalty,
+                presence_penalty=data.presence_penalty,
             ):
                 # SSE format: data: {"content": "...", "done": false}
                 event_data = json.dumps({"content": chunk, "done": False})

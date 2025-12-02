@@ -98,6 +98,11 @@
 					message,
 					model: selectedModel.id,
 					conversation_id: conversationId,
+					temperature: modelConfig.temperature,
+					max_tokens: modelConfig.maxOutputTokens,
+					top_p: modelConfig.topP,
+					frequency_penalty: modelConfig.frequencyPenalty,
+					presence_penalty: modelConfig.presencePenalty,
 					stream: true
 				},
 				(content) => {
