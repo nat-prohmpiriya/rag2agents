@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Database
-    database_url: str = "postgresql+asyncpg://user:pass@localhost:5432/ragagent"
+    database_url: str = "postgresql+asyncpg://llmproxy:dbpassword9090@localhost:5433/rag_agent"
 
     # LiteLLM
     litellm_api_url: str = "http://localhost:4000"

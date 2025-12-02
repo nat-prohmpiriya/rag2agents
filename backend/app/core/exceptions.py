@@ -24,9 +24,9 @@ class NotFoundError(AppException):
 class InvalidCredentialsError(AppException):
     """Invalid authentication credentials."""
 
-    def __init__(self):
+    def __init__(self, message: str = "Invalid credentials"):
         super().__init__(
-            message="Invalid credentials",
+            message=message,
             status_code=401,
         )
 

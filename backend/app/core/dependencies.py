@@ -32,15 +32,19 @@ async def get_current_user_id(
         InvalidCredentialsError: If token is invalid or missing
     """
     if not token:
-        raise InvalidCredentialsError()
+        raise InvalidCredentialsError("Not authenticated")
 
     payload = decode_token(token)
     if not payload:
-        raise InvalidCredentialsError()
+        raise InvalidCredentialsError("Invalid token")
+
+    # Ensure it's an access token, not a refresh token
+    if payload.get("type") != "access":
+        raise InvalidCredentialsError("Invalid token type")
 
     user_id = payload.get("sub")
     if not user_id:
-        raise InvalidCredentialsError()
+        raise InvalidCredentialsError("Invalid token")
 
     return int(user_id)
 
@@ -59,8 +63,37 @@ async def get_optional_user_id(
     if not payload:
         return None
 
+    if payload.get("type") != "access":
+        return None
+
     user_id = payload.get("sub")
     if not user_id:
         return None
 
     return int(user_id)
+
+
+async def get_current_user(
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Dependency to get current user from database.
+
+    Raises:
+        InvalidCredentialsError: If user not found or inactive
+    """
+    from app.models.user import User
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise InvalidCredentialsError("User not found")
+
+    if not user.is_active:
+        raise InvalidCredentialsError("User account is disabled")
+
+    return user

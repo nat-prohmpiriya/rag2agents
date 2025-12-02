@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.core.exceptions import AppException
-from app.routes import health
+from app.routes import auth, health
 
 app = FastAPI(
     title=settings.app_name,
@@ -35,6 +35,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 # Routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api")
 
 
 @app.get("/")
