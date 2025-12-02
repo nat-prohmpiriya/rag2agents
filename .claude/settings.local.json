@@ -17,7 +17,18 @@
       "Bash(sh:*)",
       "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
       "Bash(uv run:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(npx shadcn-svelte@latest init:*)",
+      "Bash(npx shadcn-svelte@latest add:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run build:*)",
+      "Bash(gh label create:*)",
+      "Bash(gh api:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh auth refresh:*)",
+      "Bash(gh project:*)",
+      "Bash(gh issue list:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
