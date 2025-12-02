@@ -58,6 +58,7 @@ export interface StreamChunk {
 	content: string;
 	done: boolean;
 	error?: string;
+	conversation_id?: string;
 }
 
 export const chatApi = {
@@ -86,9 +87,9 @@ export const chatApi = {
 	stream: async (
 		data: ChatRequest,
 		onChunk: (content: string) => void,
-		onDone: () => void,
+		onDone: (conversationId?: string) => void,
 		onError: (error: string) => void
-	): Promise<{ traceId: string | null }> => {
+	): Promise<{ traceId: string | null; conversationId: string | null }> => {
 		const token = localStorage.getItem('access_token');
 
 		const response = await fetch(`${API_BASE}/api/chat/stream`, {
@@ -120,6 +121,7 @@ export const chatApi = {
 		}
 
 		let buffer = '';
+		let conversationId: string | null = null;
 
 		while (true) {
 			const { done, value } = await reader.read();
@@ -135,13 +137,17 @@ export const chatApi = {
 				if (line.startsWith('data: ')) {
 					try {
 						const data = JSON.parse(line.slice(6)) as StreamChunk;
+						// Capture conversation_id from first chunk
+						if (data.conversation_id && !conversationId) {
+							conversationId = data.conversation_id;
+						}
 						if (data.error) {
 							onError(data.error);
-							return { traceId };
+							return { traceId, conversationId };
 						}
 						if (data.done) {
-							onDone();
-							return { traceId };
+							onDone(conversationId || undefined);
+							return { traceId, conversationId };
 						}
 						if (data.content) {
 							onChunk(data.content);
@@ -153,7 +159,7 @@ export const chatApi = {
 			}
 		}
 
-		onDone();
-		return { traceId };
+		onDone(conversationId || undefined);
+		return { traceId, conversationId };
 	},
 };

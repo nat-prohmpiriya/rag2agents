@@ -6,6 +6,7 @@
 	import ChatInput from './ChatInput.svelte';
 	import ChatMessage from './ChatMessage.svelte';
 	import type { ModelConfigValues } from './ModelConfig.svelte';
+	import type { Message as ApiMessage } from '$lib/api/conversations';
 
 	interface Message {
 		id: string;
@@ -16,10 +17,19 @@
 
 	interface Props {
 		conversationId?: string;
+		initialMessages?: ApiMessage[];
 		initialModel?: string;
+		onConversationCreated?: (id: string) => void;
+		onNewChat?: () => void;
 	}
 
-	let { conversationId, initialModel }: Props = $props();
+	let {
+		conversationId = $bindable(),
+		initialMessages = [],
+		initialModel,
+		onConversationCreated,
+		onNewChat
+	}: Props = $props();
 
 	// State
 	let models = $state<ModelInfo[]>([]);
@@ -32,7 +42,7 @@
 	let syncStatus = $state<'synced' | 'syncing' | 'error'>('synced');
 	let error = $state<string | null>(null);
 	let messagesEndRef = $state<HTMLDivElement | null>(null);
-	
+
 	// Model config state
 	let modelConfig = $state<ModelConfigValues>({
 		maxOutputTokens: 64000,
@@ -40,6 +50,22 @@
 		topP: 1,
 		frequencyPenalty: 0,
 		presencePenalty: 0
+	});
+
+	// Convert initial messages to local format
+	$effect(() => {
+		if (initialMessages.length > 0) {
+			messages = initialMessages.map((m) => ({
+				id: m.id,
+				role: m.role as 'user' | 'assistant',
+				content: m.content,
+				createdAt: new Date(m.created_at)
+			}));
+			// Scroll to bottom after loading messages
+			scrollToBottom();
+		} else {
+			messages = [];
+		}
 	});
 
 	// Load models on mount
@@ -52,14 +78,14 @@
 			syncStatus = 'syncing';
 			const response = await chatApi.getModels();
 			models = response.models;
-			
+
 			// Select initial model or first available
 			if (initialModel) {
-				selectedModel = models.find(m => m.id === initialModel) || models[0] || null;
+				selectedModel = models.find((m) => m.id === initialModel) || models[0] || null;
 			} else {
 				selectedModel = models[0] || null;
 			}
-			
+
 			syncStatus = 'synced';
 		} catch (e) {
 			console.error('Failed to load models:', e);
@@ -109,7 +135,7 @@
 					streamingContent += content;
 					scrollToBottom();
 				},
-				() => {
+				(newConversationId) => {
 					// On done - add assistant message
 					const assistantMessage: Message = {
 						id: crypto.randomUUID(),
@@ -121,6 +147,12 @@
 					streamingContent = '';
 					isStreaming = false;
 					isLoading = false;
+
+					// If this was a new conversation, notify parent
+					if (newConversationId && !conversationId) {
+						conversationId = newConversationId;
+						onConversationCreated?.(newConversationId);
+					}
 				},
 				(errorMsg) => {
 					error = errorMsg;
@@ -136,10 +168,12 @@
 		}
 	}
 
-	function handleNewChat() {
+	function handleNewChatClick() {
 		messages = [];
 		streamingContent = '';
 		error = null;
+		conversationId = undefined;
+		onNewChat?.();
 	}
 
 	function handleRefresh() {
@@ -148,7 +182,7 @@
 
 	function handleCopy() {
 		const text = messages
-			.map(m => `${m.role === 'user' ? 'You' : 'Assistant'}: ${m.content}`)
+			.map((m) => `${m.role === 'user' ? 'You' : 'Assistant'}: ${m.content}`)
 			.join('\n\n');
 		navigator.clipboard.writeText(text);
 	}
@@ -171,7 +205,7 @@
 		{selectedModel}
 		onModelSelect={handleModelSelect}
 		{syncStatus}
-		onNewChat={handleNewChat}
+		onNewChat={handleNewChatClick}
 		onRefresh={handleRefresh}
 		onCopy={handleCopy}
 		onConfigChange={handleConfigChange}
@@ -200,9 +234,7 @@
 
 				<!-- Error message -->
 				{#if error}
-					<div
-						class="mx-4 my-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
-					>
+					<div class="mx-4 my-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
 						{error}
 					</div>
 				{/if}
@@ -213,10 +245,5 @@
 	</ScrollArea.Root>
 
 	<!-- Input -->
-	<ChatInput
-		bind:value={inputValue}
-		onSend={handleSend}
-		loading={isLoading}
-		disabled={!selectedModel}
-	/>
+	<ChatInput bind:value={inputValue} onSend={handleSend} loading={isLoading} disabled={!selectedModel} />
 </div>
