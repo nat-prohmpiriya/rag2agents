@@ -4,11 +4,11 @@
 
 | | |
 |--|--|
-| **Version** | 2.0 |
+| **Version** | 3.0 |
 | **Date** | December 2024 |
 | **Author** | - |
 | **Status** | Ready for Development |
-| **Changes** | Added Fine-tuning Module + Text-to-SQL |
+| **Changes v3** | Job Dispatcher, Schema Linking, PII Masking, SQL Confirmation |
 
 ---
 
@@ -26,8 +26,9 @@
 - **Domain-Agnostic**: เปลี่ยน domain ด้วย config file
 - **Multi-Agent**: Pre-built agents สำหรับ HR, Legal, Finance, Research
 - **Multi-Project**: แยก knowledge base ตาม project
-- **Text-to-SQL**: Query database ด้วยภาษาธรรมชาติ ⭐ NEW
-- **Fine-tuning**: Train custom embeddings/models ⭐ NEW
+- **Text-to-SQL**: Query database ด้วยภาษาธรรมชาติ + Schema Linking
+- **Fine-tuning**: Train custom models via Job Dispatcher (GPU Cloud)
+- **PII Protection**: Auto-mask sensitive data ก่อนส่ง LLM ⭐ NEW v3
 - **Production-Ready**: User management, usage limits, monitoring
 
 ---
@@ -39,32 +40,42 @@
 | Layer | Technology | Reason |
 |-------|------------|--------|
 | **Frontend** | SvelteKit (Static) | เร็ว, รวม container เดียวกับ backend |
-| **Backend** | FastAPI (Python) | Async, เหมาะกับ AI/ML |
+| **Backend** | FastAPI (Python) | Async, เหมาะกับ AI/ML, first-class Python |
 | **LLM Gateway** | LiteLLM (Library + Proxy) | Unified API, multi-provider, Admin UI |
 | **Vector Store** | ChromaDB | Embedded, ง่าย, lightweight |
 | **Embeddings** | Sentence-transformers | Open-source, fine-tunable |
 | **Agent Framework** | Custom + LangGraph | เริ่มทำเอง แล้ว upgrade |
 | **Monitoring** | Prometheus | Metrics collection |
-| **Database** | PostgreSQL | User data, conversations |
+| **Database (Dev)** | SQLite | ง่าย, ไม่ต้อง Docker ⭐ v3 |
+| **Database (Prod)** | PostgreSQL | Production-ready |
 
-### NEW: Fine-tuning Stack
+### NEW v3: Privacy & Safety Stack
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Training** | Hugging Face Transformers | Fine-tune models |
-| **Optimization** | PEFT / LoRA | Efficient fine-tuning |
-| **Tracking** | Weights & Biases (optional) | Experiment tracking |
+| **PII Detection** | Microsoft Presidio | ตรวจจับข้อมูลส่วนตัว |
+| **PII Masking** | Presidio Anonymizer | ปิดบังข้อมูลก่อนส่ง LLM |
+| **Schema Linking** | RAG on Schema | หา tables ที่เกี่ยวข้อง |
+| **SQL Review** | User Confirmation | ให้ user ยืนยัน SQL ก่อนรัน |
+
+### Fine-tuning Stack (GPU Cloud)
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Job Dispatcher** | FastAPI + Queue | ส่ง job ไป train บน cloud |
+| **GPU Provider** | Colab/Kaggle/RunPod | Train models (มี GPU) |
+| **Tracking** | Weights & Biases | Experiment tracking |
 | **Model Hub** | Hugging Face Hub | Store & share models |
 | **Local Inference** | Ollama | Run fine-tuned models |
 
-### NEW: Text-to-SQL Stack
+### Text-to-SQL Stack (Enhanced)
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **SQL Generation** | LLM + Schema Context | Generate SQL from text |
-| **DB Connectors** | SQLAlchemy | Connect to multiple DBs |
-| **Query Execution** | Secure sandbox | Safe query execution |
-| **Result Formatting** | Pandas | Format & visualize results |
+| **Schema Linking** | RAG + Embeddings | หา tables/columns ที่เกี่ยวข้อง |
+| **SQL Generation** | LLM + Pruned Schema | Generate SQL จาก subset |
+| **SQL Review** | User Confirmation UI | ให้ user ยืนยันก่อน execute |
+| **Safe Execution** | Read-only sandbox | Execute อย่างปลอดภัย |
 
 ### DevOps & Infrastructure
 
@@ -92,26 +103,22 @@
 | **Infrastructure Total** | **~฿260/month** |
 | LLM API (OpenAI/Claude/Groq) | Pay-per-use |
 
-### Server Specs
+### GPU for Fine-tuning (On-demand)
 
-```
-Hetzner CX32 (EU - Germany/Finland)
-- 4 vCPU (Shared, Intel)
-- 8 GB RAM
-- 80 GB NVMe SSD
-- 20 TB Traffic included
-- €6.80/month
+| Provider | Cost | GPU | Notes |
+|----------|------|-----|-------|
+| **Google Colab** | Free / $10/mo Pro | T4 / A100 | ดีสำหรับเริ่มต้น |
+| **Kaggle** | Free (30h/week) | P100 / T4x2 | ฟรีแต่มี limit |
+| **RunPod** | ~$0.4/hr | A100 | Serverless, pay-per-use |
+| **Modal** | ~$0.3/hr | A10G | Serverless, ง่าย |
 
-For Fine-tuning (optional - use Colab/Kaggle):
-- Google Colab Pro: $10/month (A100 GPU)
-- Kaggle: Free (30h/week GPU)
-```
+**หมายเหตุ**: Fine-tuning ไม่ได้รันบน Hetzner (ไม่มี GPU) แต่ใช้ Job Dispatcher ส่งไป train บน cloud
 
 ---
 
 ## 🏗 Architecture
 
-### High-Level Architecture
+### High-Level Architecture (Updated v3)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -122,34 +129,43 @@ For Fine-tuning (optional - use Colab/Kaggle):
 │  │  ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐ ││
 │  │  │  App Container   │  │   LiteLLM    │  │  Prometheus  │ ││
 │  │  │  ┌────────────┐  │  │   Proxy      │  │              │ ││
-│  │  │  │Svelte(static)│ │  │   ┌──────┐  │  │              │ ││
-│  │  │  ├────────────┤  │  │   │Admin │  │  │              │ ││
-│  │  │  │  FastAPI   │──┼──┼──▶│ UI   │  │  │              │ ││
-│  │  │  ├────────────┤  │  │   └──────┘  │  │              │ ││
+│  │  │  │Svelte(static)│ │  │              │  │              │ ││
+│  │  │  ├────────────┤  │  │              │  │              │ ││
+│  │  │  │  FastAPI   │──┼──┼──────────────┼──┼──────────────│ ││
+│  │  │  ├────────────┤  │  │              │  │              │ ││
+│  │  │  │ PII Scrubber│ │  │              │  │              │ ││
+│  │  │  ├────────────┤  │  │              │  │              │ ││
 │  │  │  │  ChromaDB  │  │  │              │  │              │ ││
 │  │  │  ├────────────┤  │  │              │  │              │ ││
 │  │  │  │ PostgreSQL │  │  │              │  │              │ ││
-│  │  │  └────────────┘  │  └──────┬───────┘  └──────────────┘ ││
-│  │  └──────────────────┘         │                           ││
-│  └───────────────────────────────┼───────────────────────────┘│
-└──────────────────────────────────┼─────────────────────────────┘
-                                   │
-          ┌────────────────────────┼────────────────────────┐
-          │                        │                        │
-          ▼                        ▼                        ▼
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│    LLM APIs      │    │  Customer DBs    │    │  Hugging Face    │
-│ OpenAI │ Claude  │    │ PostgreSQL,MySQL │    │  Hub (Models)    │
-│ Groq   │ Ollama  │    │ MSSQL, MongoDB   │    │                  │
-└──────────────────┘    └──────────────────┘    └──────────────────┘
+│  │  │  └────────────┘  │  └──────────────┘  └──────────────┘ ││
+│  │  └──────────────────┘                                      ││
+│  └────────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────┘
+          │              │              │              │
+          ▼              ▼              ▼              ▼
+   ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐
+   │ LLM APIs  │  │ Customer  │  │ HF Hub    │  │ GPU Cloud │
+   │ OpenAI    │  │ Databases │  │ (Models)  │  │ Colab/    │
+   │ Claude    │  │ PG/MySQL  │  │           │  │ RunPod    │
+   └───────────┘  └───────────┘  └───────────┘  └───────────┘
 ```
 
-### Data Flow: RAG + Text-to-SQL
+### Data Flow with PII Protection ⭐ NEW v3
 
 ```
-User Query: "ยอดขายเดือนนี้เท่าไหร่ และมีเอกสาร policy อะไรเกี่ยวกับ commission"
+User Query: "คุณสมชาย โทร 081-234-5678 มียอดค้างชำระเท่าไหร่"
      │
      ▼
+┌─────────────────┐
+│  PII Scrubber   │  ← ตรวจจับและ mask ข้อมูลส่วนตัว
+│  (Presidio)     │
+└────────┬────────┘
+         │
+         ▼
+Query: "[PERSON] โทร [PHONE] มียอดค้างชำระเท่าไหร่"
+         │
+         ▼
 ┌─────────────────┐
 │  Query Router   │  ← Classify: RAG / SQL / Both
 └────────┬────────┘
@@ -162,58 +178,151 @@ User Query: "ยอดขายเดือนนี้เท่าไหร่ 
 │Pipeline│ │Pipeline│
 └───┬───┘ └───┬───┘
     │         │
-    ▼         ▼
-┌───────┐ ┌───────┐
-│Chunks │ │Query  │
-│+Scores│ │Results│
-└───┬───┘ └───┬───┘
-    │         │
     └────┬────┘
          ▼
 ┌─────────────────┐
-│   LLM Synthesis │  ← Combine results
+│   LLM Response  │  ← Response ไม่มี PII
 └─────────────────┘
          │
          ▼
 ┌─────────────────┐
-│    Response     │
-│ "ยอดขายเดือนนี้ │
-│  ฿1.2M และ...   │
+│  PII Restore    │  ← (Optional) แสดงข้อมูลจริงใน UI
+│  (if allowed)   │
 └─────────────────┘
 ```
 
-### Fine-tuning Pipeline
+### Text-to-SQL with Schema Linking ⭐ NEW v3
+
+```
+User Query: "ยอดขายของลูกค้า VIP เดือนนี้"
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 1: Schema Linking (RAG on Schema)                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Query Embedding ──▶ Search Schema Embeddings                  │
+│                              │                                  │
+│                              ▼                                  │
+│  Database (100 tables) ──▶ Find Relevant: 3 tables             │
+│                              │                                  │
+│                              ▼                                  │
+│  Relevant Tables:                                               │
+│  ├── orders (id, customer_id, amount, date)                    │
+│  ├── customers (id, name, tier, email)                         │
+│  └── customer_tiers (id, name, discount)                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 2: SQL Generation (Pruned Schema Only)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  LLM receives:                                                  │
+│  - User query                                                   │
+│  - Only 3 relevant tables (not 100)                            │
+│  - Column descriptions                                          │
+│  - Relationships                                                │
+│                                                                 │
+│  LLM generates:                                                 │
+│  SELECT c.name, SUM(o.amount) as total                         │
+│  FROM orders o                                                  │
+│  JOIN customers c ON o.customer_id = c.id                      │
+│  WHERE c.tier = 'VIP' AND o.date >= '2024-12-01'               │
+│  GROUP BY c.id                                                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 3: User Confirmation ⭐ NEW v3                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  🔍 Generated SQL Query                                  │   │
+│  │  ──────────────────────────────────────────────────────  │   │
+│  │  SELECT c.name, SUM(o.amount) as total                   │   │
+│  │  FROM orders o                                           │   │
+│  │  JOIN customers c ON o.customer_id = c.id                │   │
+│  │  WHERE c.tier = 'VIP' AND o.date >= '2024-12-01'         │   │
+│  │  GROUP BY c.id                                           │   │
+│  │                                                          │   │
+│  │  ⚠️ This query will read from: orders, customers         │   │
+│  │  📊 Estimated rows: ~50                                  │   │
+│  │                                                          │   │
+│  │  [✅ Execute]  [✏️ Edit]  [❌ Cancel]                     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+     │
+     ▼ (User clicks Execute)
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 4: Safe Execution                                        │
+├─────────────────────────────────────────────────────────────────┤
+│  ✅ Read-only connection                                        │
+│  ✅ 30 second timeout                                           │
+│  ✅ Max 1000 rows                                                │
+│  ✅ No sensitive columns exposed                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Fine-tuning: Job Dispatcher Pattern ⭐ NEW v3
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Fine-tuning Pipeline                         │
+│              Fine-tuning Job Dispatcher Pattern                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  1. Data Preparation                                            │
-│     ┌──────────┐     ┌──────────┐     ┌──────────┐             │
-│     │ Raw Data │ ──▶ │ Process  │ ──▶ │ Dataset  │             │
-│     │ (docs)   │     │ & Clean  │     │ (HF fmt) │             │
-│     └──────────┘     └──────────┘     └──────────┘             │
+│  Hetzner VPS (No GPU)              GPU Cloud (Colab/RunPod)    │
+│  ─────────────────────             ─────────────────────────    │
 │                                                                 │
-│  2. Training                                                    │
-│     ┌──────────┐     ┌──────────┐     ┌──────────┐             │
-│     │ Base     │ ──▶ │ Fine-tune│ ──▶ │ Trained  │             │
-│     │ Model    │     │ (LoRA)   │     │ Model    │             │
-│     └──────────┘     └──────────┘     └──────────┘             │
-│                           │                                     │
-│                           ▼                                     │
-│                      ┌──────────┐                               │
-│                      │  W&B     │  ← Track metrics              │
-│                      │ Logging  │                               │
-│                      └──────────┘                               │
-│                                                                 │
-│  3. Deployment                                                  │
-│     ┌──────────┐     ┌──────────┐     ┌──────────┐             │
-│     │ Trained  │ ──▶ │ Push to  │ ──▶ │ Use in   │             │
-│     │ Model    │     │ HF Hub   │     │ Platform │             │
-│     └──────────┘     └──────────┘     └──────────┘             │
+│  ┌──────────────────┐              ┌──────────────────┐        │
+│  │  Admin Panel     │              │  Training Worker │        │
+│  │  (Job Dispatcher)│              │  (GPU Instance)  │        │
+│  └────────┬─────────┘              └────────┬─────────┘        │
+│           │                                  │                  │
+│           │ 1. Create Job                    │                  │
+│           ▼                                  │                  │
+│  ┌──────────────────┐                        │                  │
+│  │  Job Queue       │                        │                  │
+│  │  (PostgreSQL)    │ ◀──────────────────────┤                  │
+│  └────────┬─────────┘   2. Poll for jobs     │                  │
+│           │                                  │                  │
+│           │                                  │                  │
+│           │              3. Download data    │                  │
+│           │ ─────────────────────────────▶   │                  │
+│           │                                  │                  │
+│           │              4. Train model      │                  │
+│           │                           ┌──────┴──────┐           │
+│           │                           │  GPU Train  │           │
+│           │                           │  (LoRA)     │           │
+│           │                           └──────┬──────┘           │
+│           │                                  │                  │
+│           │              5. Push to HF Hub   │                  │
+│           │                           ┌──────┴──────┐           │
+│           │                           │  HF Hub     │           │
+│           │                           │  (Model)    │           │
+│           │                           └──────┬──────┘           │
+│           │                                  │                  │
+│           │ ◀────────────────────────────────┤                  │
+│           │   6. Update job status           │                  │
+│           │                                  │                  │
+│           ▼                                  │                  │
+│  ┌──────────────────┐                        │                  │
+│  │  Model Registry  │ ◀──────────────────────┘                  │
+│  │  (Available to   │   7. Pull model for use                   │
+│  │   Platform)      │                                           │
+│  └──────────────────┘                                           │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
+
+Key Point: 
+─────────
+- Hetzner VPS = Job Dispatcher (no training here)
+- GPU Cloud = Actual training (Colab/Kaggle/RunPod)
+- HF Hub = Model storage & sharing
+- สิ่งที่ demo = Pipeline การส่ง job, track progress, pull model กลับมาใช้
 ```
 
 ---
@@ -241,6 +350,7 @@ User Query: "ยอดขายเดือนนี้เท่าไหร่ 
 - [ ] Default model preference
 - [ ] Notification settings
 - [ ] API key management (for power users)
+- [ ] PII masking preferences ⭐ NEW v3
 
 ---
 
@@ -257,110 +367,186 @@ User Query: "ยอดขายเดือนนี้เท่าไหร่ 
 | Component | Description |
 |-----------|-------------|
 | **Documents** | Isolated knowledge base per project |
-| **Database Connections** | External DB for Text-to-SQL ⭐ NEW |
+| **Database Connections** | External DB for Text-to-SQL |
 | **Conversations** | Chat history within project |
 | **Agent** | Assigned agent for project |
 | **Settings** | Model, temperature, custom prompts |
-| **Members** | Share with team (optional) |
+| **Privacy Settings** | PII masking level ⭐ NEW v3 |
 
-#### 2.3 Project Settings
-- [ ] Select agent type
-- [ ] Select LLM model
-- [ ] Custom system prompt
-- [ ] Temperature / Top-K settings
-- [ ] Enable/disable features
-- [ ] Database connection settings ⭐ NEW
+#### 2.3 Privacy Settings ⭐ NEW v3
+
+| Level | Description | Use Case |
+|-------|-------------|----------|
+| **Strict** | Mask ทุก PII (ชื่อ, เบอร์, อีเมล, etc.) | Mental health, Medical |
+| **Moderate** | Mask เฉพาะ sensitive (SSN, บัตร) | General business |
+| **Off** | ไม่ mask (internal use only) | Non-sensitive data |
 
 ---
 
-### 3. Agent System
+### 3. PII Protection System ⭐ NEW v3
 
-#### 3.1 Pre-built Agents
+#### 3.1 Supported PII Types
+
+| Type | Examples | Detection |
+|------|----------|-----------|
+| **PERSON** | ชื่อคน | NER + Pattern |
+| **PHONE** | 081-xxx-xxxx | Regex |
+| **EMAIL** | xxx@xxx.com | Regex |
+| **ID_CARD** | เลขบัตรประชาชน | Regex |
+| **CREDIT_CARD** | เลขบัตรเครดิต | Luhn + Regex |
+| **LOCATION** | ที่อยู่ | NER |
+| **DATE_OF_BIRTH** | วันเกิด | Pattern |
+| **MEDICAL_RECORD** | เลข HN, รหัสผู้ป่วย | Custom |
+
+#### 3.2 PII Scrubber Implementation
+
+```python
+from presidio_analyzer import AnalyzerEngine
+from presidio_anonymizer import AnonymizerEngine
+from presidio_anonymizer.entities import OperatorConfig
+
+class PIIScrubber:
+    def __init__(self):
+        self.analyzer = AnalyzerEngine()
+        self.anonymizer = AnonymizerEngine()
+        
+        # Add Thai language support
+        self.analyzer.registry.add_recognizer(ThaiPhoneRecognizer())
+        self.analyzer.registry.add_recognizer(ThaiIDCardRecognizer())
+        
+    def scrub(self, text: str, level: str = "strict") -> tuple[str, dict]:
+        """
+        Scrub PII from text.
+        Returns: (scrubbed_text, mapping)
+        """
+        # Analyze
+        results = self.analyzer.analyze(
+            text=text,
+            language="th",
+            entities=self._get_entities_for_level(level)
+        )
+        
+        # Create mapping for potential restoration
+        mapping = {}
+        for i, result in enumerate(results):
+            placeholder = f"[{result.entity_type}_{i}]"
+            original = text[result.start:result.end]
+            mapping[placeholder] = original
+        
+        # Anonymize
+        scrubbed = self.anonymizer.anonymize(
+            text=text,
+            analyzer_results=results,
+            operators={
+                "DEFAULT": OperatorConfig("replace", {"new_value": "[REDACTED]"}),
+                "PERSON": OperatorConfig("replace", {"new_value": "[PERSON]"}),
+                "PHONE_NUMBER": OperatorConfig("replace", {"new_value": "[PHONE]"}),
+                "EMAIL": OperatorConfig("replace", {"new_value": "[EMAIL]"}),
+            }
+        )
+        
+        return scrubbed.text, mapping
+    
+    def _get_entities_for_level(self, level: str) -> list:
+        if level == "strict":
+            return ["PERSON", "PHONE_NUMBER", "EMAIL", "LOCATION", 
+                    "CREDIT_CARD", "ID_CARD", "DATE_OF_BIRTH"]
+        elif level == "moderate":
+            return ["CREDIT_CARD", "ID_CARD", "MEDICAL_LICENSE"]
+        else:
+            return []
+
+# Usage in chat pipeline
+scrubber = PIIScrubber()
+
+user_input = "คุณสมชาย ใจดี โทร 081-234-5678 มีอาการซึมเศร้า"
+scrubbed, mapping = scrubber.scrub(user_input, level="strict")
+# scrubbed = "[PERSON] โทร [PHONE] มีอาการซึมเศร้า"
+# mapping = {"[PERSON]": "คุณสมชาย ใจดี", "[PHONE]": "081-234-5678"}
+
+# Send scrubbed text to LLM
+response = llm.generate(scrubbed)
+```
+
+#### 3.3 Integration Points
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   PII Protection Flow                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User Input ──▶ PII Scrubber ──▶ RAG/SQL ──▶ LLM ──▶ Response   │
+│       │              │                              │           │
+│       │              ▼                              │           │
+│       │         Mapping                             │           │
+│       │         (stored)                            │           │
+│       │              │                              │           │
+│       │              └──────────────────────────────┤           │
+│       │                                             │           │
+│       │                                             ▼           │
+│       │                                    ┌─────────────┐      │
+│       │                                    │ Audit Log   │      │
+│       │                                    │ (encrypted) │      │
+│       └────────────────────────────────────┴─────────────┘      │
+│                                                                 │
+│  Note: Original PII is stored encrypted, only for audit        │
+│        LLM never sees actual PII                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 4. Agent System
+
+#### 4.1 Pre-built Agents
 
 | Agent | Description | Tools |
 |-------|-------------|-------|
 | **General** | General-purpose assistant | RAG search, summarize |
 | **HR** | HR policy & recruitment | Resume parser, policy RAG, skill matcher |
 | **Legal** | Legal analysis & research | Contract analyzer, law search, case compare |
-| **Finance** | Financial analysis | Financial calculator, report analyzer, **SQL query** ⭐ |
+| **Finance** | Financial analysis | Financial calculator, report analyzer, SQL query |
 | **Research** | Research assistant | Paper search, citation finder |
-| **Data Analyst** | Data analysis ⭐ NEW | **SQL query**, chart generator, data summary |
+| **Data Analyst** | Data analysis | SQL query, chart generator, data summary |
+| **Mental Health** | Research assistant ⭐ NEW v3 | PII-safe RAG, anonymized case search |
 
-#### 3.2 Agent Configuration (YAML)
+#### 4.2 Mental Health Agent ⭐ NEW v3
 
 ```yaml
 agent:
-  name: "Data Analyst"
-  description: "ผู้ช่วยวิเคราะห์ข้อมูลและ query database"
-  icon: "📊"
+  name: "Mental Health Research Assistant"
+  description: "ผู้ช่วยวิจัยด้านสุขภาพจิต (PII Protected)"
+  icon: "🧠"
   
 persona:
   system_prompt: |
-    คุณเป็นนักวิเคราะห์ข้อมูล ช่วย query database และสรุปผล
-    สร้าง SQL ที่ปลอดภัย ไม่ DELETE หรือ UPDATE ข้อมูล
-    อธิบายผลลัพธ์เป็นภาษาที่เข้าใจง่าย
+    คุณเป็นผู้ช่วยวิจัยด้านสุขภาพจิต
+    - ตอบโดยอิงหลักวิชาการและงานวิจัย
+    - ไม่ให้คำวินิจฉัยหรือคำแนะนำทางการแพทย์
+    - ปกป้องความเป็นส่วนตัวของข้อมูลผู้ป่วย
+    - แนะนำให้ปรึกษาผู้เชี่ยวชาญเสมอ
+
+privacy:
+  pii_level: "strict"  # Always strict for mental health
+  audit_logging: true
+  data_retention: "encrypted"
 
 tools:
-  - name: "sql_query"
-    description: "Query database ด้วย SQL"
-    config:
-      read_only: true
-      max_rows: 1000
-      timeout: 30
-  - name: "chart_generator"
-    description: "สร้าง chart จากข้อมูล"
   - name: "rag_search"
-    description: "ค้นหาจากเอกสาร"
+    description: "ค้นหาจากเอกสารวิจัย"
+  - name: "case_search"
+    description: "ค้นหา case studies (anonymized)"
+  - name: "citation_finder"
+    description: "หา reference งานวิจัย"
 
 knowledge_base:
   sources:
     - type: "local"
-      path: "./data/analytics/"
-    - type: "database"
-      connection: "${DB_CONNECTION}"
-      
-ui:
-  suggested_prompts:
-    - "ยอดขายเดือนนี้เท่าไหร่"
-    - "เปรียบเทียบยอดขาย Q1 vs Q2"
-    - "Top 10 ลูกค้าที่ซื้อเยอะสุด"
+      path: "./data/mental_health/"
+    - type: "pubmed"
+      api: "pubmed_search"
 ```
-
-#### 3.3 Agent Features
-- [ ] Agent selector UI
-- [ ] Agent thinking display (step-by-step)
-- [ ] Tool execution visualization
-- [ ] Custom agent creation via YAML
-
----
-
-### 4. Chat System
-
-#### 4.1 Core Chat Features
-- [ ] Real-time streaming responses
-- [ ] Markdown rendering
-- [ ] Code syntax highlighting
-- [ ] Message editing / regeneration
-- [ ] Conversation branching
-
-#### 4.2 Source Citations
-- [ ] Display source documents
-- [ ] Show page/section references
-- [ ] Link to original document
-- [ ] Confidence scores
-- [ ] Show SQL query used ⭐ NEW
-
-#### 4.3 Multi-Model Support
-- [ ] Model selector dropdown
-- [ ] Models: GPT-3.5, GPT-4, Claude, Llama, Ollama
-- [ ] Custom fine-tuned models ⭐ NEW
-- [ ] Per-conversation model switching
-- [ ] Model comparison mode (A/B)
-
-#### 4.4 Conversation Memory
-- [ ] Conversation history persistence
-- [ ] Context window management
-- [ ] Conversation summarization (for long chats)
 
 ---
 
@@ -371,350 +557,295 @@ ui:
 - [ ] Automatic text extraction
 - [ ] Smart chunking (semantic / recursive)
 - [ ] Metadata extraction
+- [ ] PII detection on upload ⭐ NEW v3
 
 #### 5.2 Vector Store
 - [ ] ChromaDB integration
 - [ ] Per-project collections
+- [ ] Schema embeddings for Text-to-SQL ⭐ NEW v3
 - [ ] Embedding model: multilingual-e5-base (or fine-tuned)
 - [ ] Hybrid search (Dense + BM25)
 
 #### 5.3 Retrieval Pipeline
+- [ ] PII scrubbing on query ⭐ NEW v3
 - [ ] Query preprocessing
 - [ ] Hybrid search (dense + sparse)
 - [ ] Reciprocal Rank Fusion (RRF)
 - [ ] Re-ranking (optional)
 - [ ] Context assembly
 
-#### 5.4 Debug Panel
-- [ ] Show retrieved chunks
-- [ ] Show relevance scores
-- [ ] Show latency breakdown
-- [ ] Show token usage
+---
+
+### 6. Text-to-SQL System (Enhanced v3)
+
+#### 6.1 Schema Linking ⭐ NEW v3
+
+**Problem**: Database มี 100 ตาราง ส่งทั้งหมดให้ LLM จะ:
+- Token เยอะมาก (แพง)
+- LLM งง ตอบผิด
+
+**Solution**: RAG on Schema
+
+```python
+class SchemaLinker:
+    def __init__(self, db_connection):
+        self.db = db_connection
+        self.embedder = SentenceTransformer('intfloat/multilingual-e5-base')
+        self.schema_index = None
+        
+    def build_schema_index(self):
+        """Build embeddings for all tables/columns"""
+        schema_docs = []
+        
+        for table in self.db.get_tables():
+            # Create searchable description
+            desc = f"Table: {table.name}. {table.description}. "
+            desc += f"Columns: {', '.join([c.name for c in table.columns])}"
+            
+            schema_docs.append({
+                "table": table.name,
+                "text": desc,
+                "columns": table.columns
+            })
+        
+        # Create embeddings
+        embeddings = self.embedder.encode([d["text"] for d in schema_docs])
+        self.schema_index = faiss.IndexFlatL2(embeddings.shape[1])
+        self.schema_index.add(embeddings)
+        self.schema_docs = schema_docs
+        
+    def find_relevant_tables(self, query: str, top_k: int = 5) -> list:
+        """Find tables relevant to the query"""
+        query_embedding = self.embedder.encode([query])
+        distances, indices = self.schema_index.search(query_embedding, top_k)
+        
+        relevant = []
+        for idx in indices[0]:
+            relevant.append(self.schema_docs[idx])
+        
+        return relevant
+
+# Usage
+linker = SchemaLinker(customer_db)
+linker.build_schema_index()
+
+query = "ยอดขายของลูกค้า VIP เดือนนี้"
+relevant_tables = linker.find_relevant_tables(query, top_k=3)
+# Returns: [orders, customers, customer_tiers]
+# NOT all 100 tables
+```
+
+#### 6.2 SQL Generation with Pruned Schema
+
+```python
+def generate_sql(query: str, relevant_tables: list) -> str:
+    """Generate SQL using only relevant tables"""
+    
+    # Build pruned schema context
+    schema_context = "Available tables:\n"
+    for table in relevant_tables:
+        schema_context += f"\nTable: {table['table']}\n"
+        schema_context += f"Columns:\n"
+        for col in table['columns']:
+            schema_context += f"  - {col.name} ({col.type}): {col.description}\n"
+    
+    prompt = f"""Given this database schema:
+{schema_context}
+
+Generate a SQL query to answer: {query}
+
+Rules:
+- Use only SELECT statements
+- No DELETE, UPDATE, DROP, or INSERT
+- Include only necessary columns
+- Add appropriate WHERE clauses
+
+SQL:"""
+
+    response = llm.generate(prompt)
+    return response.strip()
+```
+
+#### 6.3 User Confirmation Step ⭐ NEW v3
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SQL Review & Confirmation                                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  📝 Your Question:                                              │
+│  "ยอดขายของลูกค้า VIP เดือนนี้"                                  │
+│                                                                 │
+│  ────────────────────────────────────────────────────────────── │
+│                                                                 │
+│  🔍 Generated SQL:                                              │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ SELECT c.name, SUM(o.amount) as total                     │ │
+│  │ FROM orders o                                             │ │
+│  │ JOIN customers c ON o.customer_id = c.id                  │ │
+│  │ WHERE c.tier = 'VIP'                                      │ │
+│  │   AND o.created_at >= '2024-12-01'                        │ │
+│  │ GROUP BY c.id                                             │ │
+│  │ ORDER BY total DESC                                       │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ────────────────────────────────────────────────────────────── │
+│                                                                 │
+│  📊 Query Analysis:                                             │
+│  • Tables accessed: orders, customers                          │
+│  • Estimated rows: ~50                                          │
+│  • Estimated time: <1 second                                    │
+│  • Safety check: ✅ Read-only query                             │
+│                                                                 │
+│  ────────────────────────────────────────────────────────────── │
+│                                                                 │
+│  [✅ Execute Query]  [✏️ Edit SQL]  [❌ Cancel]                  │
+│                                                                 │
+│  ☐ Don't ask again for similar queries (this session)          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 6.4 Safety Features (Enhanced v3)
+
+| Feature | v2 | v3 |
+|---------|----|----|
+| Read-only mode | ✅ | ✅ |
+| Query whitelist | ✅ | ✅ |
+| Row limit | ✅ | ✅ |
+| Timeout | ✅ | ✅ |
+| **Schema Linking** | ❌ | ✅ NEW |
+| **User Confirmation** | ❌ | ✅ NEW |
+| **Schema Pruning** | ❌ | ✅ NEW |
+| **Query Explanation** | ❌ | ✅ NEW |
 
 ---
 
-### 6. Text-to-SQL System ⭐ NEW
+### 7. Fine-tuning Module (Updated v3)
 
-#### 6.1 Database Connections
+#### 7.1 Job Dispatcher Architecture ⭐ UPDATED
 
-| Database | Status | Connector |
-|----------|--------|-----------|
-| **PostgreSQL** | ✅ Supported | psycopg2 |
-| **MySQL** | ✅ Supported | pymysql |
-| **MariaDB** | ✅ Supported | pymysql |
-| **SQL Server** | ✅ Supported | pyodbc |
-| **SQLite** | ✅ Supported | sqlite3 |
-| **MongoDB** | 🔜 Future | pymongo |
+**สำคัญ**: Fine-tuning ไม่รันบน Hetzner (ไม่มี GPU)
 
-#### 6.2 Connection Management
-- [ ] Add database connection (encrypted credentials)
-- [ ] Test connection
-- [ ] Auto-discover schema
-- [ ] Schema caching
-- [ ] Connection pooling
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **Job Dispatcher** | Hetzner VPS | สร้าง/จัดการ jobs |
+| **Job Queue** | PostgreSQL | เก็บ job status |
+| **Training Worker** | Colab/RunPod | Train จริง (GPU) |
+| **Model Storage** | HF Hub | เก็บ trained models |
 
-#### 6.3 Schema Configuration
+#### 7.2 Job Lifecycle
 
-```yaml
-database:
-  name: "Sales Database"
-  type: "postgresql"
-  connection:
-    host: "${DB_HOST}"
-    port: 5432
-    database: "sales_db"
-    username: "${DB_USER}"
-    password: "${DB_PASS}"  # Encrypted
-    
-schema:
-  tables:
-    - name: "orders"
-      description: "ตารางคำสั่งซื้อ"
-      columns:
-        - name: "id"
-          type: "integer"
-          description: "รหัสคำสั่งซื้อ"
-        - name: "customer_id"
-          type: "integer"
-          description: "รหัสลูกค้า"
-        - name: "amount"
-          type: "decimal"
-          description: "ยอดรวม"
-        - name: "created_at"
-          type: "timestamp"
-          description: "วันที่สั่ง"
-    
-    - name: "customers"
-      description: "ตารางลูกค้า"
-      columns:
-        - name: "id"
-          type: "integer"
-        - name: "name"
-          type: "varchar"
-        - name: "email"
-          type: "varchar"
-
-  relationships:
-    - from: "orders.customer_id"
-      to: "customers.id"
-      type: "many-to-one"
-```
-
-#### 6.4 SQL Generation Pipeline
-
-```
-User Query: "ยอดขายเดือนนี้แยกตามลูกค้า"
-     │
-     ▼
-┌─────────────────┐
-│ Schema Context  │  ← Include table/column descriptions
-│ + Query         │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  LLM Generate   │  ← Generate SQL
-│  SQL Query      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  SQL Validator  │  ← Check syntax, safety
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Execute (Safe)  │  ← Read-only, timeout, row limit
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Format Results  │  ← Table, chart, summary
-└─────────────────┘
-```
-
-#### 6.5 Safety Features
-- [ ] Read-only mode (SELECT only)
-- [ ] Query whitelist (no DROP, DELETE, UPDATE)
-- [ ] Row limit (max 1000 rows)
-- [ ] Timeout (30 seconds)
-- [ ] Query cost estimation
-- [ ] Parameterized queries (prevent SQL injection)
-- [ ] Sensitive column masking (e.g., passwords)
-
-#### 6.6 Result Visualization
-- [ ] Auto-detect best visualization
-- [ ] Table view (with pagination)
-- [ ] Bar chart
-- [ ] Line chart
-- [ ] Pie chart
-- [ ] Export to CSV/Excel
-
-#### 6.7 Example Queries
-
-| Natural Language | Generated SQL |
-|------------------|---------------|
-| "ยอดขายเดือนนี้" | `SELECT SUM(amount) FROM orders WHERE created_at >= '2024-12-01'` |
-| "Top 5 ลูกค้า" | `SELECT c.name, SUM(o.amount) as total FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id ORDER BY total DESC LIMIT 5` |
-| "ออเดอร์ของ John" | `SELECT * FROM orders WHERE customer_id = (SELECT id FROM customers WHERE name LIKE '%John%')` |
-
----
-
-### 7. Fine-tuning Module ⭐ NEW
-
-#### 7.1 Fine-tuning Options
-
-| Type | Use Case | Difficulty | Time |
-|------|----------|------------|------|
-| **Embedding Fine-tune** | Improve retrieval สำหรับ domain | ⭐⭐ Medium | 1-2 hours |
-| **Classifier Fine-tune** | Intent classification | ⭐ Easy | 30 min |
-| **LLM Fine-tune (LoRA)** | Domain-specific responses | ⭐⭐⭐ Hard | 2-4 hours |
-
-#### 7.2 Embedding Fine-tuning
-
-**Purpose**: ปรับปรุง retrieval quality สำหรับ domain เฉพาะ
-
-**Base Model**: `intfloat/multilingual-e5-base`
-
-**Training Data Format**:
-```json
-{
-  "query": "นโยบายลาพักร้อนกี่วัน",
-  "positive": "พนักงานมีสิทธิ์ลาพักร้อนปีละ 10 วัน",
-  "negative": "พนักงานต้องแต่งกายสุภาพ"
+```python
+# 1. User creates job via Admin Panel
+job = {
+    "id": "job-001",
+    "type": "embedding",
+    "base_model": "intfloat/multilingual-e5-base",
+    "training_data_url": "https://storage.../data.csv",
+    "output_model": "username/custom-embedding",
+    "status": "pending",
+    "gpu_provider": "colab"  # or "runpod", "kaggle"
 }
+
+# 2. Job saved to queue
+db.jobs.insert(job)
+
+# 3. Training Worker (on Colab) polls for jobs
+# worker.py - runs on Colab
+while True:
+    job = api.get_pending_job()
+    if job:
+        # Download training data
+        data = download(job.training_data_url)
+        
+        # Train model
+        model = train(job.base_model, data)
+        
+        # Push to HF Hub
+        model.push_to_hub(job.output_model)
+        
+        # Update job status
+        api.update_job(job.id, status="completed")
+    
+    sleep(60)
+
+# 4. Platform pulls model from HF Hub
+model = SentenceTransformer("username/custom-embedding")
 ```
 
-**Training Script**:
+#### 7.3 Training Worker Setup (Colab Notebook)
+
 ```python
-from sentence_transformers import SentenceTransformer, InputExample, losses
-from torch.utils.data import DataLoader
+# Fine-tuning Worker - Run on Google Colab
+# ========================================
 
-# Load base model
-model = SentenceTransformer('intfloat/multilingual-e5-base')
+# 1. Install dependencies
+!pip install sentence-transformers transformers peft trl wandb
 
-# Prepare training data
-train_examples = [
-    InputExample(texts=[q, pos, neg])
-    for q, pos, neg in training_data
-]
+# 2. Login to services
+from huggingface_hub import login
+login(token="hf_xxx")
 
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-train_loss = losses.TripletLoss(model)
+import wandb
+wandb.login()
 
-# Fine-tune
-model.fit(
-    train_objectives=[(train_dataloader, train_loss)],
-    epochs=3,
-    warmup_steps=100,
-    output_path='./models/custom-e5-hr'
-)
+# 3. Worker loop
+import requests
+import time
 
-# Push to Hugging Face Hub
-model.push_to_hub("username/custom-e5-hr")
-```
+API_URL = "https://your-platform.com/api/finetune"
+API_KEY = "your-api-key"
 
-#### 7.3 Intent Classifier Fine-tuning
-
-**Purpose**: Classify query → Agent/Tool
-
-**Base Model**: `bert-base-multilingual-cased`
-
-**Training Data Format**:
-```json
-[
-  {"text": "นโยบายลาป่วย", "label": "hr"},
-  {"text": "สัญญาจ้าง", "label": "legal"},
-  {"text": "ยอดขายเดือนนี้", "label": "finance"},
-  {"text": "paper เกี่ยวกับ AI", "label": "research"}
-]
-```
-
-**Training Script**:
-```python
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForSequenceClassification,
-    TrainingArguments, 
-    Trainer
-)
-from datasets import Dataset
-
-# Load base model
-model_name = "bert-base-multilingual-cased"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(
-    model_name, 
-    num_labels=5  # hr, legal, finance, research, general
-)
-
-# Prepare dataset
-dataset = Dataset.from_list(training_data)
-dataset = dataset.map(lambda x: tokenizer(x['text'], truncation=True, padding=True))
-
-# Training arguments
-training_args = TrainingArguments(
-    output_dir="./models/intent-classifier",
-    num_train_epochs=5,
-    per_device_train_batch_size=16,
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
-    load_best_model_at_end=True,
-    push_to_hub=True,
-    hub_model_id="username/intent-classifier-th"
-)
-
-# Train
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=dataset,
-    tokenizer=tokenizer
-)
-trainer.train()
-```
-
-#### 7.4 LLM Fine-tuning (LoRA)
-
-**Purpose**: Fine-tune LLM สำหรับ domain-specific responses
-
-**Base Model**: `Qwen/Qwen2.5-7B-Instruct` หรือ `meta-llama/Llama-3.1-8B-Instruct`
-
-**Training Data Format** (Instruction format):
-```json
-[
-  {
-    "instruction": "ตอบคำถามเกี่ยวกับนโยบาย HR",
-    "input": "ลาพักร้อนได้กี่วัน",
-    "output": "ตามนโยบายบริษัท พนักงานมีสิทธิ์ลาพักร้อนปีละ 10 วัน โดยต้องแจ้งล่วงหน้าอย่างน้อย 3 วัน และได้รับอนุมัติจากหัวหน้างาน"
-  }
-]
-```
-
-**Training with QLoRA** (Efficient fine-tuning):
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer
-
-# Quantization config (4-bit)
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype="float16",
-)
-
-# Load model with quantization
-model = AutoModelForCausalLM.from_pretrained(
-    "Qwen/Qwen2.5-7B-Instruct",
-    quantization_config=bnb_config,
-    device_map="auto"
-)
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
-
-# LoRA config
-lora_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
-    target_modules=["q_proj", "v_proj"],
-    lora_dropout=0.05,
-    bias="none",
-    task_type="CAUSAL_LM"
-)
-
-# Prepare model
-model = prepare_model_for_kbit_training(model)
-model = get_peft_model(model, lora_config)
-
-# Train with SFTTrainer
-trainer = SFTTrainer(
-    model=model,
-    train_dataset=dataset,
-    tokenizer=tokenizer,
-    max_seq_length=512,
-    args=TrainingArguments(
-        output_dir="./models/hr-assistant-lora",
-        num_train_epochs=3,
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=4,
-        learning_rate=2e-4,
-        fp16=True,
-        push_to_hub=True,
+while True:
+    # Poll for pending jobs
+    response = requests.get(
+        f"{API_URL}/jobs/pending",
+        headers={"Authorization": f"Bearer {API_KEY}"}
     )
-)
-trainer.train()
-
-# Merge LoRA weights and push
-merged_model = model.merge_and_unload()
-merged_model.push_to_hub("username/hr-assistant-7b")
+    
+    jobs = response.json()
+    
+    for job in jobs:
+        print(f"Processing job: {job['id']}")
+        
+        # Update status to running
+        requests.patch(
+            f"{API_URL}/jobs/{job['id']}",
+            json={"status": "running"}
+        )
+        
+        try:
+            if job['type'] == 'embedding':
+                train_embedding(job)
+            elif job['type'] == 'classifier':
+                train_classifier(job)
+            elif job['type'] == 'llm_lora':
+                train_lora(job)
+            
+            # Update status to completed
+            requests.patch(
+                f"{API_URL}/jobs/{job['id']}",
+                json={"status": "completed"}
+            )
+            
+        except Exception as e:
+            requests.patch(
+                f"{API_URL}/jobs/{job['id']}",
+                json={"status": "failed", "error": str(e)}
+            )
+    
+    time.sleep(60)  # Poll every minute
 ```
 
-#### 7.5 Fine-tuning UI (Admin Panel)
+#### 7.4 Fine-tuning UI (Updated)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Fine-tuning Dashboard                                         │
 ├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ℹ️ Note: Training runs on GPU cloud (Colab/RunPod), not local  │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │ Create New Training Job                                 │   │
@@ -722,47 +853,21 @@ merged_model.push_to_hub("username/hr-assistant-7b")
 │  │ Type:  [Embedding ▼]                                    │   │
 │  │ Base Model: [multilingual-e5-base ▼]                    │   │
 │  │ Training Data: [Upload CSV] or [Select from Documents]  │   │
+│  │ GPU Provider: [Google Colab ▼]                          │   │
 │  │ Output Name: [custom-e5-hr________________]             │   │
-│  │                                        [Start Training] │   │
+│  │                                        [Create Job]     │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
 │  Training Jobs                                                  │
 │  ┌───────────────────────────────────────────────────────────┐ │
-│  │ Job ID    │ Type      │ Status    │ Progress │ Actions   │ │
+│  │ Job ID  │ Type      │ Provider │ Status  │ Actions       │ │
 │  ├───────────────────────────────────────────────────────────┤ │
-│  │ job-001   │ Embedding │ Running   │ ████░░ 67% │ [Stop]  │ │
-│  │ job-002   │ Classifier│ Completed │ ██████ 100%│ [Deploy]│ │
-│  │ job-003   │ LLM LoRA  │ Queued    │ ░░░░░░ 0%  │ [Cancel]│ │
-│  └───────────────────────────────────────────────────────────┘ │
-│                                                                 │
-│  Deployed Models                                                │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │ Model Name          │ Type      │ Status │ Actions       │ │
-│  ├───────────────────────────────────────────────────────────┤ │
-│  │ custom-e5-hr        │ Embedding │ Active │ [Use] [Delete]│ │
-│  │ intent-classifier-th│ Classifier│ Active │ [Use] [Delete]│ │
+│  │ job-001 │ Embedding │ Colab    │ Running │ [View Logs]   │ │
+│  │ job-002 │ Classifier│ Kaggle   │ Done    │ [Deploy]      │ │
+│  │ job-003 │ LLM LoRA  │ RunPod   │ Pending │ [Cancel]      │ │
 │  └───────────────────────────────────────────────────────────┘ │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
-```
-
-#### 7.6 Integration with Platform
-
-```yaml
-# Project config - use fine-tuned models
-project:
-  name: "HR Project"
-  
-embeddings:
-  model: "username/custom-e5-hr"  # Fine-tuned model
-  
-classifier:
-  model: "username/intent-classifier-th"  # Route queries
-  
-llm:
-  model: "username/hr-assistant-7b"  # Via Ollama
-  # OR
-  model: "gpt-4"  # Via LiteLLM
 ```
 
 ---
@@ -774,26 +879,42 @@ llm:
 - [ ] Usage overview (all users)
 - [ ] System health dashboard
 - [ ] Cost tracking
-- [ ] Fine-tuning job management ⭐ NEW
-- [ ] Database connection management ⭐ NEW
+- [ ] Fine-tuning job management
+- [ ] Database connection management
+- [ ] PII audit logs ⭐ NEW v3
 
-#### 8.2 Monitoring (Prometheus)
-- [ ] Request latency
-- [ ] Token usage per user
-- [ ] Error rates
-- [ ] RAG retrieval quality
-- [ ] SQL query performance ⭐ NEW
-- [ ] Fine-tuning job status ⭐ NEW
+#### 8.2 PII Audit Dashboard ⭐ NEW v3
 
-#### 8.3 Logging
-- [ ] Request/response logs
-- [ ] Error logs
-- [ ] Audit logs (for enterprise)
-- [ ] SQL query logs (with masking) ⭐ NEW
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PII Audit Dashboard                                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Summary (Last 7 days)                                          │
+│  ─────────────────────                                          │
+│  Total queries processed: 1,234                                 │
+│  Queries with PII detected: 89 (7.2%)                          │
+│  PII successfully masked: 89 (100%)                             │
+│  PII types detected:                                            │
+│    • PERSON: 45                                                 │
+│    • PHONE: 32                                                  │
+│    • EMAIL: 12                                                  │
+│                                                                 │
+│  Recent PII Events                                              │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ Time      │ User  │ Project │ PII Types │ Action          │ │
+│  ├───────────────────────────────────────────────────────────┤ │
+│  │ 10:32:01  │ u-001 │ Mental  │ PERSON    │ Masked          │ │
+│  │ 10:30:45  │ u-002 │ HR      │ PHONE,ID  │ Masked          │ │
+│  │ 10:28:12  │ u-001 │ Mental  │ PERSON    │ Masked          │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 📁 Project Structure (Updated)
+## 📁 Project Structure (Updated v3)
 
 ```
 rag-agent-platform/
@@ -807,8 +928,8 @@ rag-agent-platform/
 │   │   │   ├── documents.py
 │   │   │   ├── agents.py
 │   │   │   ├── admin.py
-│   │   │   ├── database.py          # ⭐ NEW: DB connections API
-│   │   │   └── finetune.py          # ⭐ NEW: Fine-tuning API
+│   │   │   ├── database.py
+│   │   │   └── finetune.py
 │   │   │
 │   │   ├── core/
 │   │   │   ├── config.py
@@ -816,13 +937,21 @@ rag-agent-platform/
 │   │   │   ├── database.py
 │   │   │   └── llm_client.py
 │   │   │
+│   │   ├── privacy/                    # ⭐ NEW v3
+│   │   │   ├── __init__.py
+│   │   │   ├── pii_scrubber.py         # Presidio integration
+│   │   │   ├── thai_recognizers.py     # Thai PII patterns
+│   │   │   ├── audit_logger.py         # PII audit logging
+│   │   │   └── middleware.py           # Auto-scrub middleware
+│   │   │
 │   │   ├── models/
 │   │   │   ├── user.py
 │   │   │   ├── project.py
 │   │   │   ├── conversation.py
 │   │   │   ├── document.py
-│   │   │   ├── db_connection.py     # ⭐ NEW
-│   │   │   └── finetune_job.py      # ⭐ NEW
+│   │   │   ├── db_connection.py
+│   │   │   ├── finetune_job.py
+│   │   │   └── pii_audit.py            # ⭐ NEW v3
 │   │   │
 │   │   ├── rag/
 │   │   │   ├── embeddings.py
@@ -836,47 +965,33 @@ rag-agent-platform/
 │   │   │   ├── tools/
 │   │   │   │   ├── rag_search.py
 │   │   │   │   ├── summarize.py
-│   │   │   │   ├── sql_query.py     # ⭐ NEW
-│   │   │   │   └── chart_gen.py     # ⭐ NEW
+│   │   │   │   ├── sql_query.py
+│   │   │   │   └── chart_gen.py
 │   │   │   └── prebuilt/
 │   │   │       ├── general.py
 │   │   │       ├── hr.py
 │   │   │       ├── legal.py
 │   │   │       ├── finance.py
-│   │   │       └── data_analyst.py  # ⭐ NEW
+│   │   │       ├── data_analyst.py
+│   │   │       └── mental_health.py    # ⭐ NEW v3
 │   │   │
-│   │   ├── text2sql/                # ⭐ NEW
+│   │   ├── text2sql/
 │   │   │   ├── __init__.py
-│   │   │   ├── schema.py            # Schema discovery
-│   │   │   ├── generator.py         # SQL generation
-│   │   │   ├── validator.py         # SQL validation
-│   │   │   ├── executor.py          # Safe execution
-│   │   │   └── visualizer.py        # Result visualization
+│   │   │   ├── schema_linker.py        # ⭐ NEW v3 - RAG on schema
+│   │   │   ├── generator.py
+│   │   │   ├── validator.py
+│   │   │   ├── executor.py
+│   │   │   ├── confirmation.py         # ⭐ NEW v3 - User confirm
+│   │   │   └── visualizer.py
 │   │   │
-│   │   ├── finetune/                # ⭐ NEW
+│   │   ├── finetune/
 │   │   │   ├── __init__.py
-│   │   │   ├── embedding.py         # Embedding fine-tuning
-│   │   │   ├── classifier.py        # Classifier fine-tuning
-│   │   │   ├── llm_lora.py          # LLM LoRA fine-tuning
-│   │   │   ├── data_prep.py         # Training data preparation
-│   │   │   └── hub.py               # Hugging Face Hub integration
-│   │   │
-│   │   ├── services/
-│   │   │   ├── usage.py
-│   │   │   ├── limits.py
-│   │   │   └── notifications.py
-│   │   │
-│   │   ├── middleware/
-│   │   │   ├── auth.py
-│   │   │   └── rate_limit.py
+│   │   │   ├── job_dispatcher.py       # ⭐ UPDATED v3
+│   │   │   ├── job_queue.py
+│   │   │   ├── data_prep.py
+│   │   │   └── hub.py
 │   │   │
 │   │   └── main.py
-│   │
-│   ├── tests/
-│   │   ├── test_rag.py
-│   │   ├── test_agents.py
-│   │   ├── test_text2sql.py         # ⭐ NEW
-│   │   └── test_finetune.py         # ⭐ NEW
 │   │
 │   └── requirements.txt
 │
@@ -888,78 +1003,53 @@ rag-agent-platform/
 │   │   │   ├── login/
 │   │   │   ├── projects/
 │   │   │   ├── settings/
-│   │   │   ├── database/            # ⭐ NEW: DB management UI
-│   │   │   ├── finetune/            # ⭐ NEW: Fine-tuning UI
+│   │   │   ├── database/
+│   │   │   ├── finetune/
+│   │   │   ├── privacy/                # ⭐ NEW v3
 │   │   │   └── admin/
 │   │   ├── lib/
 │   │   │   ├── components/
 │   │   │   │   ├── Chat/
 │   │   │   │   ├── Sidebar/
 │   │   │   │   ├── AgentSelector/
-│   │   │   │   ├── DebugPanel/
-│   │   │   │   ├── SQLResult/       # ⭐ NEW
-│   │   │   │   ├── ChartView/       # ⭐ NEW
-│   │   │   │   └── UsageDashboard/
-│   │   │   ├── stores/
-│   │   │   │   ├── auth.ts
-│   │   │   │   ├── project.ts
-│   │   │   │   └── chat.ts
-│   │   │   └── api/
-│   │   │       └── client.ts
+│   │   │   │   ├── SQLConfirm/         # ⭐ NEW v3
+│   │   │   │   ├── PIIIndicator/       # ⭐ NEW v3
+│   │   │   │   └── DebugPanel/
+│   │   │   └── stores/
 │   │   └── app.html
-│   ├── static/
-│   ├── svelte.config.js
 │   └── package.json
 │
-├── configs/
-│   ├── base.yaml
-│   ├── agents/
-│   │   ├── general.yaml
-│   │   ├── hr.yaml
-│   │   ├── legal.yaml
-│   │   ├── finance.yaml
-│   │   └── data_analyst.yaml        # ⭐ NEW
-│   └── databases/                   # ⭐ NEW
-│       └── example_schema.yaml
+├── training/                           # Worker scripts for GPU cloud
+│   ├── worker.py                       # Main worker loop
+│   ├── train_embedding.py
+│   ├── train_classifier.py
+│   ├── train_lora.py
+│   └── colab_notebook.ipynb           # Ready-to-run Colab notebook
 │
-├── training/                        # ⭐ NEW: Fine-tuning scripts
-│   ├── notebooks/
-│   │   ├── finetune_embedding.ipynb
-│   │   ├── finetune_classifier.ipynb
-│   │   └── finetune_llm_lora.ipynb
-│   ├── scripts/
-│   │   ├── prepare_data.py
-│   │   ├── train_embedding.py
-│   │   ├── train_classifier.py
-│   │   └── train_lora.py
-│   └── data/
-│       └── sample/
+├── configs/
+│   ├── agents/
+│   │   └── mental_health.yaml          # ⭐ NEW v3
+│   └── pii/                            # ⭐ NEW v3
+│       ├── thai_patterns.yaml
+│       └── entity_config.yaml
 │
 ├── docker/
 │   ├── Dockerfile
 │   ├── docker-compose.yml
-│   └── docker-compose.dev.yml
+│   └── docker-compose.dev.yml          # Uses SQLite
 │
-├── .github/
-│   └── workflows/
-│       ├── ci.yml
-│       └── deploy.yml
-│
-├── docs/
-│   ├── API.md
-│   ├── DEPLOYMENT.md
-│   ├── AGENTS.md
-│   ├── TEXT2SQL.md                  # ⭐ NEW
-│   └── FINETUNING.md                # ⭐ NEW
-│
-├── Makefile
-├── README.md
-└── .env.example
+└── docs/
+    ├── API.md
+    ├── DEPLOYMENT.md
+    ├── AGENTS.md
+    ├── TEXT2SQL.md
+    ├── FINETUNING.md
+    └── PII_PROTECTION.md               # ⭐ NEW v3
 ```
 
 ---
 
-## 📅 Development Phases (Updated)
+## 📅 Development Phases (Updated v3)
 
 ### Phase 1: Foundation (Week 1-2)
 **Goal**: Basic working app with authentication
@@ -969,6 +1059,7 @@ rag-agent-platform/
 - [ ] Setup GitHub Actions CI/CD
 - [ ] FastAPI backend skeleton
 - [ ] SvelteKit frontend skeleton
+- [ ] **SQLite for development** ⭐ v3
 - [ ] User authentication (register/login)
 - [ ] Basic chat UI (no RAG yet)
 - [ ] LiteLLM integration (single model)
@@ -994,14 +1085,29 @@ rag-agent-platform/
 
 ---
 
-### Phase 3: Agent System (Week 5-6)
+### Phase 3: PII Protection ⭐ NEW v3 (Week 5)
+**Goal**: Protect sensitive data before LLM
+
+- [ ] Presidio integration
+- [ ] Thai PII recognizers (phone, ID card)
+- [ ] PII scrubber middleware
+- [ ] Privacy level settings per project
+- [ ] PII audit logging
+- [ ] Admin audit dashboard
+- [ ] PII indicator in UI
+
+**Deliverable**: All queries scrubbed before LLM, audit trail
+
+---
+
+### Phase 4: Agent System (Week 6-7)
 **Goal**: Multi-agent with tools
 
 - [ ] Agent base class
 - [ ] Agent configuration loader (YAML)
 - [ ] Agent execution engine
 - [ ] Basic tools (search, summarize)
-- [ ] Pre-built agents (General, HR, Legal)
+- [ ] Pre-built agents (General, HR, Legal, **Mental Health**)
 - [ ] Agent selector UI
 - [ ] Agent thinking display
 - [ ] Tool execution visualization
@@ -1010,53 +1116,56 @@ rag-agent-platform/
 
 ---
 
-### Phase 4: Project System (Week 7)
+### Phase 5: Text-to-SQL with Schema Linking (Week 8-9)
+**Goal**: Safe database queries with user confirmation
+
+- [ ] Database connection management
+- [ ] **Schema embedding & indexing** ⭐ v3
+- [ ] **Schema linking (RAG on schema)** ⭐ v3
+- [ ] SQL generation with pruned schema
+- [ ] SQL validation & safety checks
+- [ ] **User confirmation UI** ⭐ v3
+- [ ] Query execution (read-only)
+- [ ] Result formatting (table, chart)
+- [ ] Data Analyst agent
+
+**Deliverable**: User can query database safely with confirmation
+
+---
+
+### Phase 6: Project System (Week 10)
 **Goal**: Multi-project with isolated data
 
 - [ ] Project CRUD API
 - [ ] Per-project document storage
 - [ ] Per-project conversations
+- [ ] Per-project privacy settings ⭐ v3
 - [ ] Project settings UI
 - [ ] Project switching in sidebar
 - [ ] Project-scoped RAG queries
+- [ ] **Switch to PostgreSQL for production** ⭐ v3
 
 **Deliverable**: User can organize work into projects
 
 ---
 
-### Phase 5: Text-to-SQL ⭐ NEW (Week 8)
-**Goal**: Query databases with natural language
+### Phase 7: Fine-tuning Module (Week 11)
+**Goal**: Train custom models via Job Dispatcher
 
-- [ ] Database connection management
-- [ ] Schema discovery & caching
-- [ ] SQL generation with LLM
-- [ ] SQL validation & safety checks
-- [ ] Query execution (read-only)
-- [ ] Result formatting (table, chart)
-- [ ] Data Analyst agent
-- [ ] Database settings UI
-
-**Deliverable**: User can query their database using natural language
-
----
-
-### Phase 6: Fine-tuning Module ⭐ NEW (Week 9-10)
-**Goal**: Train custom models
-
+- [ ] **Job Dispatcher API** ⭐ v3
+- [ ] **Job Queue (PostgreSQL)** ⭐ v3
+- [ ] **Colab Worker notebook** ⭐ v3
 - [ ] Training data preparation tools
-- [ ] Embedding fine-tuning script
-- [ ] Classifier fine-tuning script
-- [ ] LLM LoRA fine-tuning script
 - [ ] Hugging Face Hub integration
-- [ ] Fine-tuning job management API
 - [ ] Fine-tuning dashboard UI
+- [ ] Model deployment flow
 - [ ] Integration with platform (use custom models)
 
-**Deliverable**: User can fine-tune and deploy custom models
+**Deliverable**: User can create training jobs, track progress, use trained models
 
 ---
 
-### Phase 7: Polish & Production (Week 11-12)
+### Phase 8: Polish & Production (Week 12)
 **Goal**: Production-ready features
 
 - [ ] Usage tracking service
@@ -1074,77 +1183,71 @@ rag-agent-platform/
 
 ---
 
-### Phase 8: Advanced Features (Optional)
-**Goal**: Impressive extras
-
-- [ ] Hybrid search (Dense + BM25)
-- [ ] Re-ranking
-- [ ] Multi-model switching
-- [ ] A/B model comparison
-- [ ] Voice input (STT)
-- [ ] Voice output (TTS)
-- [ ] Team sharing
-- [ ] Custom agent builder UI
-- [ ] MongoDB support for Text-to-SQL
-- [ ] Multimodal RAG (images, audio)
-
----
-
-## 🎓 Skills Coverage (Updated)
+## 🎓 Skills Coverage (Updated v3)
 
 | Job Requirement | Project Feature | Status |
 |-----------------|-----------------|--------|
 | **RAG Pipeline** | Document upload, embedding, retrieval | ✅ |
 | **Agentic AI** | Multi-agent system, tools, reasoning | ✅ |
-| **Fine-tuning LLMs** | Embedding, Classifier, LLM LoRA fine-tuning | ✅ NEW |
-| **Hugging Face** | Transformers, PEFT, Hub | ✅ NEW |
+| **Fine-tuning LLMs** | Job Dispatcher + GPU Cloud training | ✅ |
+| **Hugging Face** | Transformers, PEFT, Hub | ✅ |
 | **Python Scientific** | NumPy, Pandas, Data processing | ✅ |
 | **RESTful APIs** | Full REST API | ✅ |
 | **MLOps** | Prometheus, W&B, model deployment | ✅ |
 | **CI/CD** | GitHub Actions | ✅ |
 | **Large-scale Data** | Document processing, SQL queries | ✅ |
-| **Data Analysis** | Text-to-SQL, visualization | ✅ NEW |
+| **Data Privacy** | PII Protection (Presidio) | ✅ NEW v3 |
+| **Mental Health Domain** | PII-safe agent, audit logging | ✅ NEW v3 |
 
-### ครบทุก Requirements ของ Sciology ✅
+### ครบทุก Requirements + Domain-specific สำหรับ Sciology ✅
 
 ---
 
-## 💬 Interview Talking Points (Updated)
+## 💬 Interview Talking Points (Updated v3)
 
 ### Elevator Pitch
-> "ผมสร้าง RAG Agent Platform ที่เป็น domain-agnostic template รองรับ multi-project แต่ละ project มี isolated knowledge base และสามารถต่อ database ลูกค้าได้โดยตรง ผ่าน Text-to-SQL ที่ query ด้วยภาษาธรรมชาติ มี pre-built agents สำหรับ HR, Legal, Finance, Data Analysis พร้อมใช้ ระบบรองรับ fine-tuning ทั้ง embeddings, classifiers และ LLM ด้วย LoRA เพื่อปรับให้เหมาะกับ domain เฉพาะ ใช้ Hugging Face ecosystem ทั้งหมด และมี CI/CD pipeline พร้อม monitoring"
+> "ผมสร้าง RAG Agent Platform ที่เป็น domain-agnostic template รองรับ multi-project แต่ละ project มี isolated knowledge base และ privacy settings ที่แยกกัน สามารถต่อ database ลูกค้าได้โดยตรงผ่าน Text-to-SQL ที่มี Schema Linking หา tables ที่เกี่ยวข้องก่อน ไม่ต้องส่งทั้ง 100 ตาราง และมี User Confirmation ให้ review SQL ก่อนรัน ที่สำคัญคือมี PII Protection ใช้ Presidio mask ข้อมูลส่วนตัวก่อนส่งไป LLM เหมาะกับงาน Mental Health ที่ sensitive สูง"
 
 ### Technical Deep-Dives
 
-**Q: Fine-tuning ทำอะไรได้บ้าง?**
-> "ผมทำ 3 แบบครับ: 
-> 1) Fine-tune embeddings ด้วย sentence-transformers เพื่อปรับปรุง retrieval สำหรับ domain เฉพาะ
-> 2) Fine-tune classifier ด้วย BERT เพื่อ route queries ไปยัง agent ที่เหมาะสม
-> 3) Fine-tune LLM ด้วย QLoRA บน Qwen/Llama เพื่อให้ตอบในสไตล์ที่ต้องการ ใช้ Hugging Face Transformers และ PEFT library ทั้งหมด push model ขึ้น Hub ได้เลย"
+**Q: ถ้า Database Schema ของลูกค้าซับซ้อนมาก มี 100 ตาราง LLM จะไม่งงเหรอ?** ⭐ NEW
 
-**Q: Text-to-SQL ทำงานยังไง?**
-> "ผมส่ง schema context (ชื่อตาราง, คอลัมน์, relationships) ให้ LLM พร้อม query ภาษาธรรมชาติ LLM generate SQL แล้วผ่าน validator ที่ check ว่าเป็น SELECT only, ไม่มี destructive operations จากนั้น execute ใน sandbox ที่มี timeout และ row limit แสดงผลเป็น table หรือ auto-generate chart"
+> "เราทำ Schema Linking ครับ คือ embed schema ของทุก table/column ไว้ก่อน เวลา user ถามคำถาม เราเอา query ไป search หา tables ที่เกี่ยวข้อง ได้มา 2-3 tables แล้วค่อยส่งแค่ schema ส่วนนั้นให้ LLM ไม่ใช่ส่งทั้งหมด ทำให้ token น้อยลง LLM ไม่งง และตอบถูกมากขึ้น"
 
-**Q: RAG ทำงานยังไง?**
-> "ใช้ hybrid search รวม dense embeddings (multilingual-e5 หรือ fine-tuned) กับ BM25 แล้ว fuse ด้วย Reciprocal Rank Fusion สามารถใช้ fine-tuned embeddings ที่ train บน domain data ได้ ทำให้ retrieval accuracy สูงขึ้น"
+**Q: ทำไมถึงเลือกแยก Service Backend (FastAPI) กับ Frontend (SvelteKit)?** ⭐ NEW
 
-**Q: Production-ready ไหม?**
-> "มี error handling ครบ, retry logic, rate limiting ผ่าน LiteLLM, monitoring ด้วย Prometheus, experiment tracking ด้วย W&B, CI/CD ที่ test ก่อน deploy และมี security features สำหรับ Text-to-SQL เช่น read-only mode, query validation, sensitive data masking"
+> "Python เป็น first-class citizen ของงาน AI/ML ครับ การใช้ FastAPI ทำให้ integrate กับ library อย่าง LangChain, Presidio, Pandas, sentence-transformers ได้ดีกว่า และรองรับ async process นานๆ เช่น training job, document processing ได้ดีกว่า JavaScript runtime"
+
+**Q: Fine-tuning ทำยังไงถ้าไม่มี GPU บน server?**
+
+> "ผมทำเป็น Job Dispatcher pattern ครับ Hetzner VPS เป็นแค่ตัวสร้างและจัดการ job ส่วน training จริงรันบน Google Colab หรือ RunPod ที่มี GPU พอ train เสร็จ push model ขึ้น Hugging Face Hub แล้ว platform ก็ดึงมาใช้ได้เลย สิ่งที่ demo คือ pipeline ทั้งหมด ไม่ใช่แค่การ train"
+
+**Q: ข้อมูล Mental Health sensitive มาก จัดการยังไง?**
+
+> "ใช้ Microsoft Presidio ครับ ทำ PII Scrubber ที่ detect และ mask ข้อมูลส่วนตัวก่อนส่งไป LLM เช่น ชื่อคนไข้ เบอร์โทร รหัสผู้ป่วย ทั้งหมด mask หมด LLM ไม่เห็นของจริงเลย แต่ยังตอบคำถามได้ พร้อมมี audit log ไว้ตรวจสอบว่า mask อะไรไปบ้าง"
+
+**Q: Text-to-SQL อันตรายไหม ให้ LLM เขียน SQL?**
+
+> "ผมมี safety หลายชั้นครับ: 1) Schema Pruning ส่งแค่ tables ที่เกี่ยวข้อง ไม่ expose ทั้งหมด 2) Validation ตรวจว่าเป็น SELECT only 3) User Confirmation แสดง SQL ให้ user กดยืนยันก่อนรัน 4) Execute บน read-only connection มี timeout และ row limit"
 
 ---
 
 ## 📎 Appendix
 
-### A. Environment Variables (Updated)
+### A. Environment Variables (Updated v3)
 
 ```env
 # App
 APP_NAME=RAG Agent Platform
-APP_ENV=production
+APP_ENV=development  # or production
 SECRET_KEY=your-secret-key
 
-# Database (Internal)
-DATABASE_URL=postgresql://user:pass@localhost:5432/ragagent
+# Database
+# Development (SQLite)
+DATABASE_URL=sqlite:///./data/app.db
+
+# Production (PostgreSQL)
+# DATABASE_URL=postgresql://user:pass@localhost:5432/ragagent
 
 # LiteLLM
 LITELLM_MASTER_KEY=sk-master-key
@@ -1153,26 +1256,27 @@ ANTHROPIC_API_KEY=sk-xxx
 
 # Embeddings
 EMBEDDING_MODEL=intfloat/multilingual-e5-base
-# Or fine-tuned: username/custom-e5-hr
 
 # Hugging Face
 HF_TOKEN=hf_xxx
 HF_USERNAME=your-username
 
-# Weights & Biases (optional)
+# PII Protection (NEW v3)
+PII_DEFAULT_LEVEL=strict  # strict, moderate, off
+PII_AUDIT_ENABLED=true
+PRESIDIO_LOG_LEVEL=INFO
+
+# Fine-tuning
+FINETUNE_GPU_PROVIDER=colab  # colab, kaggle, runpod
 WANDB_API_KEY=xxx
 
 # Storage
 UPLOAD_DIR=/data/uploads
 CHROMA_DIR=/data/chroma
 MODELS_DIR=/data/models
-
-# Text-to-SQL
-SQL_QUERY_TIMEOUT=30
-SQL_MAX_ROWS=1000
 ```
 
-### B. API Endpoints (Updated)
+### B. API Endpoints (Updated v3)
 
 ```
 Auth
@@ -1187,6 +1291,7 @@ Projects
   GET    /api/projects/{id}
   PUT    /api/projects/{id}
   DELETE /api/projects/{id}
+  PUT    /api/projects/{id}/privacy         # NEW v3
 
 Documents
   GET    /api/projects/{id}/documents
@@ -1202,31 +1307,36 @@ Agents
   GET    /api/agents
   GET    /api/agents/{id}
 
-Database Connections (NEW)
+Database Connections
   GET    /api/projects/{id}/databases
   POST   /api/projects/{id}/databases
   GET    /api/projects/{id}/databases/{db_id}/schema
-  POST   /api/projects/{id}/databases/{db_id}/test
-  DELETE /api/projects/{id}/databases/{db_id}
-  POST   /api/projects/{id}/databases/{db_id}/query
+  POST   /api/projects/{id}/databases/{db_id}/link-schema   # NEW v3
+  POST   /api/projects/{id}/databases/{db_id}/generate-sql  # NEW v3
+  POST   /api/projects/{id}/databases/{db_id}/confirm-sql   # NEW v3
+  POST   /api/projects/{id}/databases/{db_id}/execute       # NEW v3
 
-Fine-tuning (NEW)
+Fine-tuning
   GET    /api/finetune/jobs
   POST   /api/finetune/jobs
   GET    /api/finetune/jobs/{job_id}
-  POST   /api/finetune/jobs/{job_id}/stop
+  PATCH  /api/finetune/jobs/{job_id}        # Worker updates status
+  GET    /api/finetune/jobs/pending         # Worker polls this
   GET    /api/finetune/models
   POST   /api/finetune/models/{model_id}/deploy
-  DELETE /api/finetune/models/{model_id}
+
+Privacy (NEW v3)
+  GET    /api/admin/pii/audit
+  GET    /api/admin/pii/stats
+  POST   /api/privacy/scrub                 # Test PII scrubbing
 
 Admin
   GET    /api/admin/users
   PUT    /api/admin/users/{id}
   GET    /api/admin/usage
-  GET    /api/admin/finetune/jobs
 ```
 
-### C. Docker Compose (Updated)
+### C. Docker Compose (Development - SQLite)
 
 ```yaml
 version: '3.8'
@@ -1237,15 +1347,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ragagent
+      - APP_ENV=development
+      - DATABASE_URL=sqlite:///./data/app.db
       - LITELLM_URL=http://litellm:4000
-      - HF_TOKEN=${HF_TOKEN}
-    depends_on:
-      - db
-      - litellm
+      - PII_DEFAULT_LEVEL=strict
     volumes:
       - ./data:/data
-      - ./models:/models
+      - ./backend:/app/backend
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
@@ -1253,8 +1361,38 @@ services:
       - "4000:4000"
     environment:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
-      - UI_USERNAME=admin
-      - UI_PASSWORD=${LITELLM_UI_PASSWORD}
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+```
+
+### D. Docker Compose (Production - PostgreSQL)
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ragagent
+      - LITELLM_URL=http://litellm:4000
+      - PII_DEFAULT_LEVEL=strict
+      - PII_AUDIT_ENABLED=true
+    depends_on:
+      - db
+      - litellm
+    volumes:
+      - app_data:/data
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - ./litellm-config.yaml:/app/config.yaml
 
@@ -1274,39 +1412,9 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
 
-  # Optional: Ollama for local fine-tuned models
-  ollama:
-    image: ollama/ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]  # If GPU available
-
 volumes:
+  app_data:
   postgres_data:
-  ollama_data:
-```
-
-### D. Training Requirements (NEW)
-
-```txt
-# training/requirements.txt
-torch>=2.0.0
-transformers>=4.36.0
-sentence-transformers>=2.2.0
-datasets>=2.16.0
-peft>=0.7.0
-trl>=0.7.0
-bitsandbytes>=0.41.0
-accelerate>=0.25.0
-wandb>=0.16.0
-huggingface_hub>=0.20.0
-scikit-learn>=1.3.0
 ```
 
 ---
@@ -1318,6 +1426,7 @@ scikit-learn>=1.3.0
 - [ ] Install Coolify
 - [ ] Configure GitHub Actions
 - [ ] Create Hugging Face account & token
+- [ ] Setup Presidio for PII protection
 - [ ] Begin Phase 1
 
 ---
@@ -1326,17 +1435,32 @@ scikit-learn>=1.3.0
 
 | Phase | Week | Features |
 |-------|------|----------|
-| 1. Foundation | 1-2 | Auth, Chat, LiteLLM |
+| 1. Foundation | 1-2 | Auth, Chat, LiteLLM, SQLite |
 | 2. RAG Core | 3-4 | Documents, Embeddings, Retrieval |
-| 3. Agent System | 5-6 | Multi-agent, Tools |
-| 4. Project System | 7 | Multi-project, Isolation |
-| 5. Text-to-SQL | 8 | Database queries ⭐ |
-| 6. Fine-tuning | 9-10 | Custom models ⭐ |
-| 7. Polish | 11-12 | Production-ready |
+| 3. PII Protection | 5 | Presidio, Audit logging ⭐ NEW |
+| 4. Agent System | 6-7 | Multi-agent, Mental Health agent |
+| 5. Text-to-SQL | 8-9 | Schema Linking, User Confirm ⭐ NEW |
+| 6. Project System | 10 | Multi-project, PostgreSQL |
+| 7. Fine-tuning | 11 | Job Dispatcher, GPU Cloud ⭐ NEW |
+| 8. Polish | 12 | Production-ready |
 
 **Total: 12 weeks (3 months)**
 
 ---
 
-*Document Version 2.0 - December 2024*
-*Added: Fine-tuning Module, Text-to-SQL System*
+## 🎯 Key Improvements in v3
+
+| Feature | Before (v2) | After (v3) |
+|---------|-------------|------------|
+| **Fine-tuning** | Train on Hetzner (impossible) | Job Dispatcher → GPU Cloud |
+| **Text-to-SQL** | Send all schema | Schema Linking (RAG on schema) |
+| **SQL Safety** | Auto-execute | User Confirmation required |
+| **PII** | None | Presidio auto-masking |
+| **Dev Database** | PostgreSQL | SQLite (faster dev) |
+| **Mental Health** | Generic agent | Specialized PII-safe agent |
+
+---
+
+*Document Version 3.0 - December 2024*
+*Added: PII Protection, Schema Linking, SQL Confirmation, Job Dispatcher*
+*Target: Sciology (Mental Health/Scientific Research)*
