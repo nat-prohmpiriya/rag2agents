@@ -1,0 +1,33 @@
+# Prometheus Configuration for RAG Agent Platform
+# Used by docker-compose.yaml with --profile monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Backend API metrics
+  - job_name: "backend-api"
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # LiteLLM metrics
+  - job_name: "litellm"
+    static_configs:
+      - targets: ["litellm:4000"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Redis metrics (if redis_exporter is added)
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
