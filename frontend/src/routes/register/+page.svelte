@@ -49,7 +49,7 @@
 				first_name: firstName || undefined,
 				last_name: lastName || undefined,
 			});
-			goto('/');
+			goto('/chat');
 		} catch (err) {
 			if (err instanceof ApiException) {
 				error = err.message;

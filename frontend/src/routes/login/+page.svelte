@@ -20,7 +20,7 @@
 
 		try {
 			await auth.login({ email, password });
-			goto('/');
+			goto('/chat');
 		} catch (err) {
 			if (err instanceof ApiException) {
 				error = err.message;
