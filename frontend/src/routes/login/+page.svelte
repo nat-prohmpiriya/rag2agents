@@ -1,17 +1,33 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { Eye, EyeOff } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card';
 	import * as Alert from '$lib/components/ui/alert';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { auth } from '$lib/stores';
 	import { ApiException } from '$lib/types';
+
+	const REMEMBER_EMAIL_KEY = 'rag_remember_email';
 
 	let email = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let showPassword = $state(false);
+	let rememberEmail = $state(false);
+
+	onMount(() => {
+		// Load remembered email from localStorage
+		const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+		if (savedEmail) {
+			email = savedEmail;
+			rememberEmail = true;
+		}
+	});
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -19,6 +35,13 @@
 		isLoading = true;
 
 		try {
+			// Save or clear remembered email
+			if (rememberEmail) {
+				localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+			} else {
+				localStorage.removeItem(REMEMBER_EMAIL_KEY);
+			}
+
 			await auth.login({ email, password });
 			goto('/dashboard');
 		} catch (err) {
@@ -30,6 +53,10 @@
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	function togglePasswordVisibility() {
+		showPassword = !showPassword;
 	}
 </script>
 
@@ -72,14 +99,40 @@
 							Forgot password?
 						</a>
 					</div>
-					<Input
-						id="password"
-						type="password"
-						placeholder="Enter your password"
-						bind:value={password}
-						required
+					<div class="relative">
+						<Input
+							id="password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder="Enter your password"
+							bind:value={password}
+							required
+							disabled={isLoading}
+							class="pr-10"
+						/>
+						<button
+							type="button"
+							onclick={togglePasswordVisibility}
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+							tabindex={-1}
+						>
+							{#if showPassword}
+								<EyeOff class="size-4" />
+							{:else}
+								<Eye class="size-4" />
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<div class="flex items-center space-x-2">
+					<Checkbox
+						id="remember"
+						bind:checked={rememberEmail}
 						disabled={isLoading}
 					/>
+					<Label for="remember" class="text-sm font-normal cursor-pointer">
+						Remember my email
+					</Label>
 				</div>
 
 				<Button type="submit" class="w-full" disabled={isLoading}>
