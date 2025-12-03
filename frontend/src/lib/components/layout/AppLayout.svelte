@@ -25,7 +25,7 @@
 </script>
 
 <Tooltip.Provider>
-	<div class="flex min-h-screen bg-background">
+	<div class="flex h-screen bg-background overflow-hidden">
 		<!-- Mobile sidebar trigger (floating button) -->
 		<div class="fixed top-4 left-4 z-50 md:hidden">
 			<Sheet.Root bind:open={sidebarOpen}>
@@ -50,19 +50,17 @@
 		</div>
 
 		<!-- Desktop sidebar -->
-		<div class="hidden md:block">
-			<div class="sticky top-0 h-screen">
-				<Sidebar
-					{user}
-					{onLogout}
-					collapsed={sidebar.collapsed}
-					onToggle={handleToggle}
-				/>
-			</div>
+		<div class="hidden md:flex shrink-0">
+			<Sidebar
+				{user}
+				{onLogout}
+				collapsed={sidebar.collapsed}
+				onToggle={handleToggle}
+			/>
 		</div>
 
 		<!-- Main content -->
-		<main class="flex-1 min-w-0">
+		<main class="flex-1 min-w-0 h-full overflow-hidden">
 			{#if children}
 				{@render children()}
 			{/if}

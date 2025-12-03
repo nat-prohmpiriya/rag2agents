@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { conversationsApi, type ConversationDetail } from '$lib/api/conversations';
-	import LLMChat from '$lib/components/llm-chat/LLMChat.svelte';
+	import LLMChat2 from '$lib/components/llm-chat2/LLMChat2.svelte';
 	import { chatStore } from '$lib/stores';
 
 	// State
@@ -45,6 +45,17 @@
 		chatStore.loadInitial();
 		goto('/chat');
 	}
+
+	async function handleDelete() {
+		if (!conversationId) return;
+		try {
+			await conversationsApi.delete(conversationId);
+			chatStore.loadInitial();
+			goto('/chat');
+		} catch (e) {
+			console.error('Failed to delete conversation:', e);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -66,11 +77,11 @@
 		</button>
 	</div>
 {:else if conversationDetail}
-	<div class="h-full p-4">
-		<LLMChat
-			conversationId={conversationId}
-			initialMessages={conversationDetail.messages}
-			onNewChat={handleNewChat}
-		/>
-	</div>
+	<LLMChat2
+		conversationId={conversationId}
+		conversationTitle={conversationDetail.title || 'New conversation'}
+		initialMessages={conversationDetail.messages}
+		onNewChat={handleNewChat}
+		onDelete={handleDelete}
+	/>
 {/if}

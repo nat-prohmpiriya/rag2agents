@@ -238,7 +238,7 @@
 	{/if}
 
 	<!-- User Avatar & Toggle button -->
-	<div class="border-t p-2">
+	<div class="mt-auto border-t p-2">
 		{#if collapsed}
 			<!-- Collapsed: User avatar icon -->
 			{#if user}

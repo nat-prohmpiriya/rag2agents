@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import LLMChat from '$lib/components/llm-chat/LLMChat.svelte';
+	import LLMChat2 from '$lib/components/llm-chat2/LLMChat2.svelte';
 	import { chatStore } from '$lib/stores';
 
 	function handleConversationCreated(id: string) {
@@ -19,9 +19,7 @@
 	<title>New Chat | RAG Agent</title>
 </svelte:head>
 
-<div class="h-full p-4">
-	<LLMChat
-		onConversationCreated={handleConversationCreated}
-		onNewChat={handleNewChat}
-	/>
-</div>
+<LLMChat2
+	onConversationCreated={handleConversationCreated}
+	onNewChat={handleNewChat}
+/>
