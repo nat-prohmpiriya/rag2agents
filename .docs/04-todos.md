@@ -144,10 +144,15 @@
 
 ### 2.3 Retrieval Pipeline
 - [x] Implement dense search (cosine similarity with pgvector)
+- [x] Implement document scope filter (rag_document_ids)
 - [ ] Implement hybrid search (Dense + BM25) - optional
 - [x] Create query preprocessing
 - [x] Implement context assembly
 - [ ] Add re-ranking (optional)
+- [ ] Add query expansion (optional)
+- [ ] Add chunk overlap in chunking (optional)
+- [ ] Add metadata filtering (date, file type) - optional
+- [ ] Add RAG evaluation metrics (precision/recall) - optional
 - [x] Create RAG prompt template
 
 ### 2.4 Source Citations
@@ -265,31 +270,41 @@
 
 ## Phase 6: Project System
 
-### 6.1 Project Backend
-- [ ] Create Project model & schema
+### 6.1 Project Backend (MVP)
+- [ ] Update Project model (already exists, verify fields)
+- [ ] Create ProjectDocument junction table (many-to-many)
+- [ ] Add project_id to Conversation (optional FK, one-to-many)
 - [ ] Implement project CRUD API
-- [ ] Setup per-project document storage
-- [ ] Setup per-project ChromaDB collections
-- [ ] Implement per-project privacy settings
-- [ ] Add per-project database connections
+- [ ] Implement assign/remove documents to project API
+- [ ] Update RAG to filter by project (optional scope)
+- [ ] Create database migration
 
-### 6.2 Conversation Management
+### 6.2 Project UI (MVP)
+- [ ] Create project list in sidebar
+- [ ] Implement create/edit project dialog
+- [ ] Add project switching
+- [ ] Create project detail page (show documents/conversations)
+- [ ] Implement assign documents UI
+- [ ] Filter chat by project context
+
+### 6.3 Conversation Management
 - [x] Create Conversation model
 - [x] Create Message model
 - [x] Implement conversation CRUD API
 - [x] Add conversation history retrieval
-- [ ] Implement context window management
-- [ ] Add conversation summarization (for long chats)
+- [ ] Implement context window management (later)
+- [ ] Add conversation summarization (later)
 
-### 6.3 Project UI
-- [ ] Create project list in sidebar
-- [ ] Implement create project dialog
-- [ ] Implement project settings dialog
-- [ ] Add project switching
-- [ ] Show project-specific documents
-- [ ] Show project-specific conversations
+### 6.4 Project Enhancements (Later - NOT MVP)
+- [ ] Team/Multi-user support (ProjectMember, roles, permissions)
+- [ ] Project settings (privacy level, default agent)
+- [ ] Project archive/restore (soft delete)
+- [ ] Project templates
+- [ ] Bulk assign documents
+- [ ] Project search/filter
+- [ ] Project stats (doc count, usage)
 
-**Phase 6 Deliverable**: User can organize work into isolated projects
+**Phase 6 MVP Deliverable**: User can organize documents into projects, RAG scoped by project
 
 ---
 

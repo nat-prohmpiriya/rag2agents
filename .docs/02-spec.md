@@ -42,12 +42,11 @@
 | **Frontend** | SvelteKit + Svelte 5 + Tailwind v4 + shadcn-svelte | Enterprise-ready UI, White-label support |
 | **Backend** | FastAPI (Python) | Async, เหมาะกับ AI/ML, first-class Python |
 | **LLM Gateway** | LiteLLM (Library + Proxy) | Unified API, multi-provider, Admin UI |
-| **Vector Store** | ChromaDB | Embedded, ง่าย, lightweight |
-| **Embeddings** | Sentence-transformers | Open-source, fine-tunable |
+| **Vector Store** | pgvector (PostgreSQL) | Native PostgreSQL extension, production-ready |
+| **Embeddings** | LiteLLM Embedding API (Gemini text-embedding-004) | 768 dims, unified API |
 | **Agent Framework** | Custom + LangGraph | เริ่มทำเอง แล้ว upgrade |
 | **Monitoring** | Prometheus | Metrics collection |
-| **Database (Dev)** | SQLite | ง่าย, ไม่ต้อง Docker ⭐ v3 |
-| **Database (Prod)** | PostgreSQL | Production-ready |
+| **Database** | PostgreSQL + pgvector | Dev & Prod, vector support built-in |
 
 ### NEW v3: Privacy & Safety Stack
 
@@ -175,9 +174,8 @@
 │  │  │  ├────────────┤  │  │              │  │              │ ││
 │  │  │  │ PII Scrubber│ │  │              │  │              │ ││
 │  │  │  ├────────────┤  │  │              │  │              │ ││
-│  │  │  │  ChromaDB  │  │  │              │  │              │ ││
-│  │  │  ├────────────┤  │  │              │  │              │ ││
 │  │  │  │ PostgreSQL │  │  │              │  │              │ ││
+│  │  │  │ + pgvector │  │  │              │  │              │ ││
 │  │  │  └────────────┘  │  └──────────────┘  └──────────────┘ ││
 │  │  └──────────────────┘                                      ││
 │  └────────────────────────────────────────────────────────────┘│
@@ -593,26 +591,26 @@ knowledge_base:
 ### 5. RAG System
 
 #### 5.1 Document Processing
-- [ ] Supported formats: PDF, DOCX, TXT, MD, CSV
-- [ ] Automatic text extraction
-- [ ] Smart chunking (semantic / recursive)
-- [ ] Metadata extraction
+- [x] Supported formats: PDF, DOCX, TXT, MD, CSV
+- [x] Automatic text extraction (PyMuPDF, python-docx)
+- [x] Smart chunking (recursive splitter)
+- [x] Metadata extraction
 - [ ] PII detection on upload ⭐ NEW v3
 
 #### 5.2 Vector Store
-- [ ] ChromaDB integration
+- [x] pgvector integration (replaced ChromaDB)
 - [ ] Per-project collections
 - [ ] Schema embeddings for Text-to-SQL ⭐ NEW v3
-- [ ] Embedding model: multilingual-e5-base (or fine-tuned)
-- [ ] Hybrid search (Dense + BM25)
+- [x] Embedding model: Gemini text-embedding-004 (768 dims via LiteLLM)
+- [ ] Hybrid search (Dense + BM25) - optional
 
 #### 5.3 Retrieval Pipeline
 - [ ] PII scrubbing on query ⭐ NEW v3
-- [ ] Query preprocessing
-- [ ] Hybrid search (dense + sparse)
-- [ ] Reciprocal Rank Fusion (RRF)
+- [x] Query preprocessing
+- [x] Dense search (cosine similarity with pgvector)
+- [ ] Hybrid search (dense + sparse) - optional
 - [ ] Re-ranking (optional)
-- [ ] Context assembly
+- [x] Context assembly
 
 ---
 
@@ -1115,16 +1113,16 @@ rag-agent-platform/
 
 ---
 
-### Phase 2: RAG Core (Week 3-4)
+### Phase 2: RAG Core (Week 3-4) ✅ DONE
 **Goal**: Document upload and RAG working
 
-- [ ] Document upload API
-- [ ] PDF/DOCX text extraction
-- [ ] Text chunking (recursive)
-- [ ] ChromaDB integration
-- [ ] Embedding generation
-- [ ] Basic retrieval (dense search)
-- [ ] Source citations in responses
+- [x] Document upload API
+- [x] PDF/DOCX text extraction (PyMuPDF, python-docx)
+- [x] Text chunking (recursive splitter)
+- [x] pgvector integration (replaced ChromaDB)
+- [x] Embedding generation (LiteLLM + Gemini text-embedding-004)
+- [x] Basic retrieval (dense search with cosine similarity)
+- [x] Source citations in responses
 - [ ] Document management UI
 
 **Deliverable**: User can upload docs and ask questions
@@ -1300,8 +1298,9 @@ LITELLM_MASTER_KEY=sk-master-key
 OPENAI_API_KEY=sk-xxx
 ANTHROPIC_API_KEY=sk-xxx
 
-# Embeddings
-EMBEDDING_MODEL=intfloat/multilingual-e5-base
+# Embeddings (via LiteLLM)
+EMBEDDING_MODEL=text-embedding-004
+EMBEDDING_DIMENSION=768
 
 # Hugging Face
 HF_TOKEN=hf_xxx
@@ -1382,7 +1381,7 @@ Admin
   GET    /api/admin/usage
 ```
 
-### C. Docker Compose (Development - SQLite)
+### C. Docker Compose (Development - PostgreSQL + pgvector)
 
 ```yaml
 version: '3.8'
@@ -1394,12 +1393,30 @@ services:
       - "8000:8000"
     environment:
       - APP_ENV=development
-      - DATABASE_URL=sqlite:///./data/app.db
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ragagent
       - LITELLM_URL=http://litellm:4000
       - PII_DEFAULT_LEVEL=strict
+    depends_on:
+      - db
+      - litellm
     volumes:
-      - ./data:/data
       - ./backend:/app/backend
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ragagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
@@ -1409,9 +1426,12 @@ services:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - ./litellm-config.yaml:/app/config.yaml
+
+volumes:
+  postgres_data:
 ```
 
-### D. Docker Compose (Production - PostgreSQL)
+### D. Docker Compose (Production)
 
 ```yaml
 version: '3.8'
@@ -1507,6 +1527,7 @@ volumes:
 
 ---
 
-*Document Version 3.0 - December 2024*
+*Document Version 3.1 - December 2024*
+*Updated: pgvector (replaced ChromaDB), LiteLLM Embedding API (replaced sentence-transformers), PostgreSQL (Dev & Prod)*
 *Added: PII Protection, Schema Linking, SQL Confirmation, Job Dispatcher*
 *Target: Sciology (Mental Health/Scientific Research)*

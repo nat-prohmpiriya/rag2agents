@@ -55,7 +55,22 @@
       "Bash(frontend/src/routes/\\(app\\)/chat/+page.svelte )",
       "Bash(\"frontend/src/routes/(app)/chat/[id]/\")",
       "Bash(cat:*)",
-      "Bash(ACCESS_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzhiNTZlYy0yY2Y2LTRmZTAtYjk1NS0xNWNkYTY1NmQyY2UiLCJleHAiOjE3NjQ2ODQ1MjksInR5cGUiOiJhY2Nlc3MifQ.Rrc_j3NTemY9cn92WN6oloxVllkG6UZc0OlcBOEUI_0\")"
+      "Bash(ACCESS_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzhiNTZlYy0yY2Y2LTRmZTAtYjk1NS0xNWNkYTY1NmQyY2UiLCJleHAiOjE3NjQ2ODQ1MjksInR5cGUiOiJhY2Nlc3MifQ.Rrc_j3NTemY9cn92WN6oloxVllkG6UZc0OlcBOEUI_0\")",
+      "Bash(frontend/src/lib/api/documents.ts )",
+      "Bash(frontend/src/lib/api/index.ts )",
+      "Bash(frontend/src/lib/components/documents/ )",
+      "Bash(frontend/src/lib/components/llm-chat/SourceCitation.svelte )",
+      "Bash(frontend/src/lib/components/llm-chat/ChatHeader.svelte )",
+      "Bash(frontend/src/lib/components/llm-chat/ChatMessage.svelte )",
+      "Bash(frontend/src/lib/components/ui/switch/ )",
+      "Bash(frontend/src/routes/\\(app\\)/documents/)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5M2QwM2U5OS05OGIxLTQzYmItOTQ1Yy1lYjNmOTdiOWYxMDEiLCJleHAiOjE3NjQ2OTA5ODUsInR5cGUiOiJhY2Nlc3MifQ.WdoUWA5DuN3SCf2x9QwkkwjVOIElHFDo0MI5wHbotIk\")",
+      "Bash(__NEW_LINE__ curl -s -X POST \"http://localhost:8000/api/documents\" )",
+      "Bash(xargs kill:*)",
+      "Bash(timeout 60 uv run:*)",
+      "Bash(docker exec:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MGZlMzQ4NS1mMzI1LTRkYWItYjE2OS1hMTA2MGI2NGUzZjUiLCJleHAiOjE3NjQ2OTczMzUsInR5cGUiOiJhY2Nlc3MifQ.zo6DoJj8vKUJPovjxvE1Dck4_7pV_L8eVccfvKDWMpc\")",
+      "Bash(__NEW_LINE__ curl -s -X POST \"http://localhost:8000/api/chat\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"message\"\": \"\"What is AI transforming according to the documents?\"\", \"\"use_rag\"\": true, \"\"rag_top_k\"\": 3}')"
     ],
     "deny": [],
     "ask": []
