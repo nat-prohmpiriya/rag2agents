@@ -16,6 +16,13 @@ class AgentTool(str, Enum):
     web_search = "web_search"
 
 
+class AgentSource(str, Enum):
+    """Source type for agents."""
+
+    system = "system"  # Pre-built from YAML configs
+    user = "user"  # Created by users
+
+
 class ToolInfo(BaseModel):
     """Tool information schema."""
 
@@ -31,6 +38,7 @@ class AgentInfo(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
     name: str
     slug: str
     description: str | None = None
@@ -39,6 +47,8 @@ class AgentInfo(BaseModel):
     tools: list[str] | None = None
     config: dict | None = None
     is_active: bool = True
+    source: AgentSource = AgentSource.user
+    document_ids: list[uuid.UUID] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -56,6 +66,8 @@ class AgentCreate(BaseModel):
     tools: list[AgentTool] | None = Field(default=None)
     config: dict | None = Field(default=None)
     is_active: bool = True
+    project_id: uuid.UUID | None = Field(default=None)
+    document_ids: list[uuid.UUID] | None = Field(default=None)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -68,6 +80,7 @@ class AgentCreate(BaseModel):
                 "tools": ["rag_search", "web_search"],
                 "config": {"temperature": 0.7},
                 "is_active": True,
+                "document_ids": [],
             }
         }
     )
@@ -84,12 +97,15 @@ class AgentUpdate(BaseModel):
     tools: list[AgentTool] | None = Field(default=None)
     config: dict | None = Field(default=None)
     is_active: bool | None = None
+    project_id: uuid.UUID | None = None
+    document_ids: list[uuid.UUID] | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "name": "Updated Research Assistant",
                 "description": "An updated description",
+                "document_ids": [],
             }
         }
     )

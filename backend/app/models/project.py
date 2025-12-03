@@ -53,6 +53,10 @@ class Project(Base, TimestampMixin):
         back_populates="project",
         cascade="all, delete-orphan",
     )
+    agents: Mapped[list["Agent"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Project(id={self.id}, name={self.name})>"
@@ -62,3 +66,4 @@ class Project(Base, TimestampMixin):
 from app.models.user import User  # noqa: E402, F401
 from app.models.conversation import Conversation  # noqa: E402, F401
 from app.models.project_document import ProjectDocument  # noqa: E402, F401
+from app.models.agent import Agent  # noqa: E402, F401
