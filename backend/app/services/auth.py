@@ -103,3 +103,17 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User | None:
     stmt = select(User).where(User.id == user_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def update_user_profile(
+    db: AsyncSession, user: User, first_name: str | None, last_name: str | None
+) -> User:
+    """Update user profile."""
+    if first_name is not None:
+        user.first_name = first_name
+    if last_name is not None:
+        user.last_name = last_name
+
+    await db.commit()
+    await db.refresh(user)
+    return user

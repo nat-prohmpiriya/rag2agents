@@ -392,12 +392,21 @@ Key Point:
 | **Pro** | 500K/month | 20 | 100 | GPT-4, Claude | 30 req/min |
 | **Enterprise** | Unlimited | Unlimited | Unlimited | All + Custom | 100 req/min |
 
-#### 1.3 User Settings
-- [ ] Profile management
-- [ ] Default model preference
-- [ ] Notification settings
-- [ ] API key management (for power users)
-- [ ] PII masking preferences ⭐ NEW v3
+#### 1.3 User Profile ⭐ NEW
+- [x] User profile fields (first_name, last_name, avatar_url)
+- [ ] Profile update API endpoint
+- [ ] Profile settings page UI
+- [ ] Avatar upload (stored in local storage)
+
+#### 1.4 User Settings ⭐ NEW
+- [ ] UserSettings model (theme, language, default_model, etc.)
+- [ ] Settings CRUD API
+- [ ] Settings page UI with sections:
+  - General (theme, language)
+  - AI preferences (default model, temperature)
+  - Notifications (optional)
+  - API keys (for power users, optional)
+  - PII masking preferences (optional)
 
 ---
 
@@ -531,7 +540,7 @@ Special agent for mental health domain:
 
 ---
 
-### 6. Text-to-SQL System (Enhanced v3)
+### 6. Database Integration & sql_query Tool
 
 #### 6.1 Schema Linking ⭐ NEW v3
 
@@ -578,25 +587,39 @@ Before execution, show user:
 
 ---
 
-### 7. Advanced Tools System ⭐ NEW v4
+### 7. Tools System ⭐ UPDATED v4
 
 #### 7.1 Available Tools
 
-| Tool | Description | Safety |
-|------|-------------|--------|
-| **Code Executor** | Run Python/JS in Docker sandbox | Isolated container |
-| **API Caller** | Call external APIs | Rate limited |
-| **File Manager** | Read/write user files | Scoped to user dir |
-| **Web Scraper** | Extract web content | Robots.txt compliant |
+| Tool | Description | Safety | Phase |
+|------|-------------|--------|-------|
+| **rag_search** | Search documents | Per-project scope | ✅ Done |
+| **summarize** | Summarize text | - | 🔄 In Progress |
+| **calculator** | Math calculations | - | 🔄 In Progress |
+| **sql_query** | Query database (Text-to-SQL) | Read-only, User confirm | Phase 6 |
+| **code_executor** | Run Python/JS in Docker | Isolated container | Phase 7 |
+| **api_caller** | Call external APIs | Rate limited | Phase 7 |
+| **file_manager** | Read/write user files | Scoped to user dir | Phase 7 |
+| **web_scraper** | Extract web content | Robots.txt compliant | Phase 7 |
 
-#### 7.2 Multi-Agent Orchestration
+#### 7.2 sql_query Tool (Text-to-SQL) ⭐
+
+**Features**:
+- Schema Linking (RAG on Schema) - หา tables ที่เกี่ยวข้อง
+- SQL Generation with pruned schema
+- User Confirmation UI - ยืนยันก่อนรัน
+- Safe Execution - read-only, timeout, row limit
+
+**See Section 6 for details**
+
+#### 7.3 Multi-Agent Orchestration
 
 **Orchestrator Pattern**:
 - Orchestrator Agent รับ task จาก user
 - แบ่งงานให้ Specialized Agents (Research, Coder, Writer)
 - รวม results และ respond กลับ user
 
-#### 7.3 Workflow Builder
+#### 7.4 Workflow Builder
 
 Users can create custom workflows:
 - Visual drag-and-drop builder
@@ -605,9 +628,48 @@ Users can create custom workflows:
 
 ---
 
-### 8. Admin & Monitoring
+### 8. User Profile & Settings ⭐ NEW
 
-#### 8.1 Admin Panel
+#### 8.1 User Profile
+
+| Field | Type | Description |
+|-------|------|-------------|
+| first_name | string | User's first name |
+| last_name | string | User's last name |
+| avatar_url | string | URL to avatar image |
+
+**API Endpoints**:
+- `GET /api/users/me` - Get current user profile
+- `PUT /api/users/me` - Update profile (first_name, last_name)
+- `POST /api/users/me/avatar` - Upload avatar image
+
+#### 8.2 User Settings Model
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| theme | enum | system | light, dark, system |
+| language | enum | en | en, th |
+| default_model | string | null | Preferred LLM model |
+| default_temperature | float | 0.7 | Default temperature |
+| notifications_enabled | bool | true | Enable notifications |
+
+**API Endpoints**:
+- `GET /api/users/me/settings` - Get user settings
+- `PUT /api/users/me/settings` - Update settings
+
+#### 8.3 Settings Page UI
+
+Sections:
+1. **Profile** - Name, avatar
+2. **General** - Theme, language
+3. **AI Preferences** - Default model, temperature
+4. **Account** - Email, password change (future)
+
+---
+
+### 9. Admin & Monitoring
+
+#### 9.1 Admin Panel
 - [ ] User management (view, edit, suspend)
 - [ ] Usage overview (all users)
 - [ ] System health dashboard
@@ -616,7 +678,7 @@ Users can create custom workflows:
 - [ ] Database connection management
 - [ ] PII audit logs ⭐ NEW v3
 
-#### 8.2 PII Audit Dashboard ⭐ NEW v3
+#### 9.2 PII Audit Dashboard ⭐ NEW v3
 
 Shows:
 - Total queries processed
@@ -634,6 +696,7 @@ llm-application-framework/
 │   ├── app/
 │   │   ├── routes/                     # API endpoints
 │   │   │   ├── auth.py
+│   │   │   ├── users.py               # Profile & Settings ⭐ NEW
 │   │   │   ├── chat.py
 │   │   │   ├── projects.py
 │   │   │   ├── documents.py
@@ -654,6 +717,7 @@ llm-application-framework/
 │   │   │
 │   │   ├── models/
 │   │   │   ├── user.py
+│   │   │   ├── user_settings.py       # User preferences ⭐ NEW
 │   │   │   ├── project.py
 │   │   │   ├── conversation.py
 │   │   │   ├── message.py
@@ -747,112 +811,95 @@ llm-application-framework/
 
 ---
 
-## 📅 Development Phases (Updated v3)
+## 📅 Development Phases (Updated v4)
 
-### Phase 1: Foundation (Week 1-2)
+### Phase 1: Foundation ✅ DONE
 **Goal**: Basic working app with authentication
 
-- [ ] Setup project structure
-- [ ] Setup Hetzner VPS + Coolify
-- [ ] Setup GitHub Actions CI/CD
-- [ ] FastAPI backend skeleton
-- [ ] SvelteKit frontend skeleton
+- [x] Setup project structure
+- [x] FastAPI backend skeleton
+- [x] SvelteKit frontend skeleton
 - [x] PostgreSQL + pgvector for dev & production
-- [ ] User authentication (register/login)
-- [ ] Basic chat UI (no RAG yet)
-- [ ] LiteLLM integration (single model)
-- [ ] Docker containerization
+- [x] User authentication (register/login)
+- [x] Basic chat UI
+- [x] LiteLLM integration
+- [x] Docker containerization
 
 **Deliverable**: User can login and chat with AI
 
 ---
 
-### Phase 2: RAG Core (Week 3-4) ✅ DONE
+### Phase 2: RAG Core ✅ DONE
 **Goal**: Document upload and RAG working
 
 - [x] Document upload API
 - [x] PDF/DOCX text extraction (PyMuPDF, python-docx)
 - [x] Text chunking (recursive splitter)
-- [x] pgvector integration (replaced ChromaDB)
+- [x] pgvector integration
 - [x] Embedding generation (LiteLLM + Gemini text-embedding-004)
 - [x] Basic retrieval (dense search with cosine similarity)
 - [x] Source citations in responses
-- [ ] Document management UI
+- [x] Document management UI
 
 **Deliverable**: User can upload docs and ask questions
 
 ---
 
-### Phase 3: PII Protection ⭐ NEW v3 (Week 5)
-**Goal**: Protect sensitive data before LLM
-
-- [ ] Presidio integration
-- [ ] Thai PII recognizers (phone, ID card)
-- [ ] PII scrubber middleware
-- [ ] Privacy level settings per project
-- [ ] PII audit logging
-- [ ] Admin audit dashboard
-- [ ] PII indicator in UI
-
-**Deliverable**: All queries scrubbed before LLM, audit trail
-
----
-
-### Phase 4: Agent System (Week 6-7)
+### Phase 3: Agent System 🔄 IN PROGRESS
 **Goal**: Multi-agent with tools
 
-- [ ] Agent base class
-- [ ] Agent configuration loader (YAML)
-- [ ] Agent execution engine
-- [ ] Basic tools (search, summarize)
-- [ ] Pre-built agents (General, HR, Legal, **Mental Health**)
-- [ ] Agent selector UI
-- [ ] Agent thinking display
-- [ ] Tool execution visualization
+- [x] Agent base class
+- [x] Agent configuration loader (YAML)
+- [x] Agent execution engine
+- [x] rag_search tool
+- [ ] summarize tool
+- [ ] calculator tool
+- [x] Pre-built agents (General, Finance)
+- [x] Agent selector UI
+- [x] Agent thinking display
+- [x] User-created agents
 
 **Deliverable**: User can select agents for different tasks
 
 ---
 
-### Phase 5: Text-to-SQL with Schema Linking (Week 8-9)
-**Goal**: Safe database queries with user confirmation
-
-- [ ] Database connection management
-- [ ] **Schema embedding & indexing** ⭐ v3
-- [ ] **Schema linking (RAG on schema)** ⭐ v3
-- [ ] SQL generation with pruned schema
-- [ ] SQL validation & safety checks
-- [ ] **User confirmation UI** ⭐ v3
-- [ ] Query execution (read-only)
-- [ ] Result formatting (table, chart)
-- [ ] Data Analyst agent
-
-**Deliverable**: User can query database safely with confirmation
-
----
-
-### Phase 6: Project System (Week 10)
+### Phase 4: Project System ✅ DONE
 **Goal**: Multi-project with isolated data
 
-- [ ] Project CRUD API
-- [ ] Per-project document storage
-- [ ] Per-project conversations
-- [ ] Per-project privacy settings ⭐ v3
-- [ ] Project settings UI
-- [ ] Project switching in sidebar
-- [ ] Project-scoped RAG queries
-- [ ] **Switch to PostgreSQL for production** ⭐ v3
+- [x] Project CRUD API
+- [x] Per-project document storage
+- [x] Per-project conversations
+- [x] Project settings UI
+- [x] Project switching in sidebar
+- [x] Project-scoped RAG queries
 
 **Deliverable**: User can organize work into projects
 
 ---
 
-### Phase 7: Advanced Tools & Multi-Agent (Week 11)
-**Goal**: Powerful tools and agent collaboration
+### Phase 5: Database Integration (sql_query tool)
+**Goal**: Safe database queries with user confirmation
 
-- [ ] **Code Executor Tool** - Run Python/JS in sandbox
-- [ ] **API Caller Tool** - Call external APIs
-- [ ] **File Manager Tool** - Read/write user files
+- [ ] Database connection management
+- [ ] Schema embedding & indexing
+- [ ] Schema linking (RAG on schema)
+- [ ] sql_query tool implementation
+- [ ] SQL validation & safety checks
+- [ ] User confirmation UI
+- [ ] Query execution (read-only)
+- [ ] Result formatting (table, chart)
+- [ ] Data Analyst agent with sql_query tool
+
+**Deliverable**: Agent can query database safely with confirmation
+
+---
+
+### Phase 6: Advanced Tools
+**Goal**: Powerful tools for agents
+
+- [ ] **code_executor tool** - Run Python/JS in sandbox
+- [ ] **api_caller tool** - Call external APIs
+- [ ] **file_manager tool** - Read/write user files
 - [ ] **Web Scraper Tool** - Extract web content
 - [ ] **Multi-Agent Orchestration** - Agent-to-agent communication
 - [ ] **Orchestrator Agent** - Delegate tasks to specialized agents
@@ -863,7 +910,7 @@ llm-application-framework/
 
 ---
 
-### Phase 8: Polish & Production (Week 12)
+### Phase 7: Polish & Production
 **Goal**: Production-ready features
 
 - [ ] Usage tracking service
@@ -881,23 +928,24 @@ llm-application-framework/
 
 ---
 
-### Phase 9: Fine-tuning Module (Optional/Future)
-**Goal**: Train custom models via Job Dispatcher
+### Optional Phases
 
-> ⚠️ **Optional**: ฟีเจอร์นี้ไม่จำเป็นสำหรับ MVP เนื่องจาก RAG + Prompting เพียงพอสำหรับ use case ส่วนใหญ่
+#### PII Protection (On Request)
+> เมื่อมี target ที่ต้องการ (Mental Health, Medical)
+
+- [ ] Presidio integration
+- [ ] Thai PII recognizers
+- [ ] PII scrubber middleware
+- [ ] Privacy level settings
+- [ ] PII audit logging
+
+#### Fine-tuning Module (On Request)
+> เมื่อ RAG + Prompting ไม่เพียงพอ
 
 - [ ] Job Dispatcher API
-- [ ] Job Queue (PostgreSQL)
-- [ ] Colab Worker notebook
-- [ ] Training data preparation tools
+- [ ] GPU Cloud integration
 - [ ] Hugging Face Hub integration
 - [ ] Fine-tuning dashboard UI
-- [ ] Model deployment flow
-
-**When to implement**:
-- เมื่อต้องการ custom style/format ที่ prompting ทำไม่ได้
-- เมื่อมี training data มากพอ (>1,000 examples)
-- เมื่อ scale ใหญ่พอที่จะคุ้มค่า cost
 
 ---
 
@@ -976,15 +1024,15 @@ llm-application-framework/
 
 ## 📊 Timeline Summary
 
-| Phase | Week | Features |
-|-------|------|----------|
-| 1. Foundation | 1-2 | Auth, Chat, LiteLLM ✅ |
-| 2. RAG Core | 3-4 | Documents, Embeddings, Retrieval ✅ |
-| 3. Agent System | 5-6 | Multi-agent, User agents 🔄 |
-| 4. Text-to-SQL | 7-8 | Schema Linking, User Confirm |
-| 5. Project System | 9 | Multi-project ✅ |
-| 6. Advanced Tools | 10-11 | Code executor, Multi-agent orchestration |
-| 7. Polish | 12 | Production-ready |
+| Phase | Features | Status |
+|-------|----------|--------|
+| 1. Foundation | Auth, Chat, LiteLLM | ✅ Done |
+| 2. RAG Core | Documents, Embeddings, Retrieval | ✅ Done |
+| 3. Agent System | Tools (rag_search, summarize), User agents | 🔄 In Progress |
+| 4. Project System | Multi-project, Isolated data | ✅ Done |
+| 5. Database Integration | sql_query tool, Schema Linking | Pending |
+| 6. Advanced Tools | code_executor, api_caller, web_scraper | Pending |
+| 7. Polish | Production-ready | Pending |
 
 ### Optional (On Request)
 | Feature | When to implement |
@@ -992,20 +1040,17 @@ llm-application-framework/
 | **PII Protection** | เมื่อมี target ที่ต้องการ (Mental Health, Medical) |
 | **Fine-tuning** | เมื่อ RAG + Prompting ไม่เพียงพอ |
 
-**Total: 12 weeks (3 months)**
+---
+
+## 🎯 Key Improvements in v4.2
+
+| Feature | Before | After |
+|---------|--------|-------|
+| **Text-to-SQL** | Separate Phase | sql_query tool (Agent tool) |
+| **Tools** | Unstructured | Clear tool table with phases |
+| **Phase Order** | Inconsistent | Aligned with actual progress |
 
 ---
 
-## 🎯 Key Improvements in v4
-
-| Feature | v3 | v4 |
-|---------|----|----|
-| **Fine-tuning** | Required | Optional (RAG เพียงพอ) |
-| **Tools** | Basic | Advanced (Code, API, Scraper) |
-| **Multi-Agent** | Single agent | Orchestrator pattern |
-| **Workflows** | None | Visual builder |
-
----
-
-*Document Version 4.1 - December 2024*
-*Changes: PII + Fine-tuning → Optional, Added Advanced Tools & Multi-Agent*
+*Document Version 4.2 - December 2024*
+*Changes: Restructured Text-to-SQL as sql_query tool, Updated phase order*

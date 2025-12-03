@@ -13,7 +13,8 @@
       "Bash(uv run ruff check:*)",
       "Bash(uv run python:*)",
       "WebSearch",
-      "WebFetch(domain:docs.openwebui.com)"
+      "WebFetch(domain:docs.openwebui.com)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

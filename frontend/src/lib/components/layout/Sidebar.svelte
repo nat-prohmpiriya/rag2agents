@@ -6,7 +6,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { MessageSquare, FileText, Bot, Database, Sliders, Settings, ChevronLeft, ChevronRight, FolderOpen, LogOut, User } from 'lucide-svelte';
+	import { MessageSquare, FileText, Bot, ChevronLeft, ChevronRight, FolderOpen, LogOut, User, Settings } from 'lucide-svelte';
 	import ProjectList from '$lib/components/projects/ProjectList.svelte';
 	import type { Project } from '$lib/api';
 
@@ -43,10 +43,7 @@
 	const navItems: NavItem[] = [
 		{ label: 'Chat', href: '/chat', icon: MessageSquare },
 		{ label: 'Documents', href: '/documents', icon: FileText },
-		{ label: 'Agents', href: '/agents', icon: Bot },
-		{ label: 'SQL Query', href: '/sql', icon: Database },
-		{ label: 'Fine-tuning', href: '/finetune', icon: Sliders },
-		{ label: 'Settings', href: '/settings', icon: Settings }
+		{ label: 'Agents', href: '/agents', icon: Bot }
 	];
 
 	function isActive(href: string): boolean {

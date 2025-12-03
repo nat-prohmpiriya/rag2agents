@@ -22,6 +22,7 @@
 | Redis | ✅ Done | Running for LiteLLM cache |
 | Vector Store | ✅ Done | pgvector (replaced ChromaDB) |
 | Auth System | ✅ Done | JWT + refresh token |
+| User Profile & Settings | 🔄 In Progress | Profile fields exist, API/UI pending |
 | Chat System | ✅ Done | Streaming, History, Settings, Markdown |
 | Conversation API | ✅ Done | CRUD + Messages |
 | RAG Pipeline | ✅ Done | Document upload, chunking, embedding, retrieval |
@@ -119,6 +120,18 @@
 - [x] Show message timestamps in UI
 - [x] Add message copy button
 - [x] Add regenerate response button
+
+### 1.9 User Profile & Settings ⭐ NEW
+- [x] User profile fields exist (first_name, last_name)
+- [ ] Create users route file (routes/users.py)
+- [ ] Add profile update API endpoint (PUT /api/users/me)
+- [ ] Add avatar upload endpoint (POST /api/users/me/avatar)
+- [ ] Create UserSettings model (user_settings.py)
+- [ ] Add settings CRUD API endpoints
+- [ ] Create settings page UI (frontend)
+- [ ] Add theme switcher (light/dark/system)
+- [ ] Add language selector
+- [ ] Add default model preference
 
 **Phase 1 Deliverable**: User can register, login, and chat with AI
 
@@ -245,7 +258,7 @@
 
 ---
 
-## Phase 5: Text-to-SQL with Schema Linking
+## Phase 5: Database Integration (sql_query tool)
 
 ### 5.1 Database Connection Management
 - [ ] Create DatabaseConnection model
@@ -253,39 +266,43 @@
 - [ ] Create connection test endpoint
 - [ ] Support PostgreSQL and MySQL
 
-### 5.2 Schema Linking (RAG on Schema)
+### 5.2 sql_query Tool Implementation
+- [ ] Create sql_query tool class (extends BaseTool)
+- [ ] Integrate with Agent execution engine
+- [ ] Add to Data Analyst agent
+
+### 5.3 Schema Linking (RAG on Schema)
 - [ ] Extract schema metadata from connected databases
 - [ ] Create schema embedding service
 - [ ] Build schema vector index
 - [ ] Implement relevant table finder
 - [ ] Create schema pruning logic
 
-### 5.3 SQL Generation
+### 5.4 SQL Generation & Validation
 - [ ] Create SQL generator with pruned schema
 - [ ] Implement SQL validation (SELECT only)
 - [ ] Add safety checks (no DROP, DELETE, etc.)
 - [ ] Create query explanation generator
 
-### 5.4 User Confirmation UI
+### 5.5 User Confirmation UI
 - [ ] Create SQLConfirm component
 - [ ] Display generated SQL with syntax highlighting
 - [ ] Show affected tables and estimated rows
 - [ ] Add Edit/Execute/Cancel buttons
-- [ ] Implement "Don't ask again" option
 
-### 5.5 Safe Execution
+### 5.6 Safe Execution
 - [ ] Create read-only database executor
 - [ ] Implement query timeout (30 seconds)
 - [ ] Add row limit (1000 rows)
 - [ ] Create result formatter (table/chart)
 
-**Phase 5 Deliverable**: User can query database safely with confirmation
+**Phase 5 Deliverable**: sql_query tool working, Agent can query database safely
 
 ---
 
-## Phase 6: Project System
+## Phase 4: Project System ✅ DONE
 
-### 6.1 Project Backend (MVP)
+### 4.1 Project Backend (MVP)
 - [x] Update Project model (already exists, verify fields)
 - [x] Create ProjectDocument junction table (many-to-many)
 - [x] Add project_id to Conversation (optional FK, one-to-many)
@@ -294,7 +311,7 @@
 - [x] Update RAG to filter by project (optional scope)
 - [x] Create database migration
 
-### 6.2 Project UI (MVP)
+### 4.2 Project UI (MVP)
 - [x] Create project list in sidebar
 - [x] Implement create/edit project dialog
 - [x] Add project switching
@@ -302,7 +319,7 @@
 - [x] Implement assign documents UI
 - [x] Filter chat by project context
 
-### 6.3 Conversation Management
+### 4.3 Conversation Management
 - [x] Create Conversation model
 - [x] Create Message model
 - [x] Implement conversation CRUD API
@@ -310,7 +327,7 @@
 - [ ] Implement context window management (later)
 - [ ] Add conversation summarization (later)
 
-### 6.4 Project Enhancements (Later - NOT MVP)
+### 4.4 Project Enhancements (Later - NOT MVP)
 - [ ] Team/Multi-user support (ProjectMember, roles, permissions)
 - [ ] Project settings (privacy level, default agent)
 - [ ] Project archive/restore (soft delete)
@@ -319,46 +336,46 @@
 - [ ] Project search/filter
 - [ ] Project stats (doc count, usage)
 
-**Phase 6 MVP Deliverable**: User can organize documents into projects, RAG scoped by project
+**Phase 4 Deliverable**: User can organize documents into projects, RAG scoped by project ✅
 
 ---
 
-## Phase 7: Advanced Tools & Multi-Agent
+## Phase 6: Advanced Tools & Multi-Agent
 
-### 7.1 Advanced Tools
-- [ ] Create Code Executor tool (Python/JS in Docker sandbox)
-- [ ] Create API Caller tool (external API integration)
-- [ ] Create File Manager tool (read/write user files)
-- [ ] Create Web Scraper tool (extract web content)
+### 6.1 Advanced Tools
+- [ ] Create code_executor tool (Python/JS in Docker sandbox)
+- [ ] Create api_caller tool (external API integration)
+- [ ] Create file_manager tool (read/write user files)
+- [ ] Create web_scraper tool (extract web content)
 - [ ] Add tool safety measures (rate limiting, sandboxing)
 
-### 7.2 Multi-Agent Orchestration
+### 6.2 Multi-Agent Orchestration
 - [ ] Create Orchestrator Agent (task delegation)
 - [ ] Implement agent-to-agent communication
 - [ ] Create specialized agents (Research, Coder, Writer)
 - [ ] Add task result aggregation
 
-### 7.3 Workflow Builder
+### 6.3 Workflow Builder
 - [ ] Create workflow model & schema
 - [ ] Implement workflow execution engine
 - [ ] Create visual workflow builder UI
 - [ ] Add trigger-based automation
 - [ ] Implement scheduled tasks
 
-**Phase 7 Deliverable**: Agents can use powerful tools and collaborate on complex tasks
+**Phase 6 Deliverable**: Agents can use powerful tools and collaborate on complex tasks
 
 ---
 
-## Phase 8: Polish & Production
+## Phase 7: Polish & Production
 
-### 8.1 Usage Tracking
+### 7.1 Usage Tracking
 - [ ] Create usage tracking service
 - [ ] Track token usage per user
 - [ ] Track request count per user
 - [ ] Calculate cost per user
 - [ ] Store usage history
 
-### 8.2 Limits & Quotas
+### 7.2 Limits & Quotas
 - [ ] Implement user tier system (Free/Pro/Enterprise)
 - [ ] Add token quota (monthly)
 - [ ] Add rate limiting (requests/minute)
@@ -367,7 +384,7 @@
 - [ ] Implement 80% usage warning
 - [ ] Implement limit reached blocking
 
-### 8.3 Debug Panel
+### 7.3 Debug Panel
 - [ ] Create debug panel component (collapsible)
 - [ ] Show retrieved chunks
 - [ ] Display similarity scores
@@ -375,7 +392,7 @@
 - [ ] Display token count
 - [ ] Show cost estimation
 
-### 8.4 Admin Panel
+### 7.4 Admin Panel
 - [ ] Create admin routes (protected)
 - [ ] Implement user list view
 - [ ] Add user edit (tier, limits)
@@ -384,7 +401,7 @@
 - [ ] Add system metrics view
 - [ ] Create PII audit viewer
 
-### 8.5 Polish & Optimization
+### 7.5 Polish & Optimization
 - [ ] Add comprehensive error handling
 - [ ] Implement retry logic
 - [ ] Add loading states throughout
@@ -393,11 +410,11 @@
 - [ ] Performance testing
 - [ ] Security audit
 
-**Phase 8 Deliverable**: Production-ready application
+**Phase 7 Deliverable**: Production-ready application
 
 ---
 
-## Phase 9: Fine-tuning Module (Optional/Future)
+## Optional: Fine-tuning Module (On Request)
 
 > ⚠️ **Optional**: ฟีเจอร์นี้ไม่จำเป็นสำหรับ MVP เนื่องจาก RAG + Prompting เพียงพอสำหรับ use case ส่วนใหญ่
 
@@ -443,10 +460,10 @@
 ### Priority Order
 1. **Phase 1** - Foundation (Auth, Chat) ✅
 2. **Phase 2** - RAG Core (Documents, Retrieval) ✅
-3. **Phase 3** - Agent System (Multi-agent) 🔄
-4. **Phase 4** - Text-to-SQL (Schema Linking)
-5. **Phase 5** - Project System (Organization) ✅
-6. **Phase 6** - Advanced Tools & Multi-Agent ⭐
+3. **Phase 3** - Agent System (Tools: rag_search, summarize) 🔄
+4. **Phase 4** - Project System (Organization) ✅
+5. **Phase 5** - Database Integration (sql_query tool)
+6. **Phase 6** - Advanced Tools (code_executor, api_caller, web_scraper)
 7. **Phase 7** - Polish (Production-ready)
 
 ### Optional (On Request)
@@ -454,8 +471,11 @@
 - **Fine-tuning** - เมื่อ RAG + Prompting ไม่เพียงพอ
 
 ### Current Focus
-> **Phase 3 In Progress!** Agent System: Backend done, Frontend UI done.
-> **Next Step**: User-Created Agents feature (Backend CRUD + Frontend Form)
+> **User Profile & Settings In Progress!**
+> **Next Steps**:
+> 1. Create users route (PUT /api/users/me)
+> 2. Create UserSettings model
+> 3. Create settings page UI
 
 ### Blockers
 - None currently
@@ -463,4 +483,4 @@
 ---
 
 *Last updated: December 3, 2024*
-*Synced with spec v4.1 (PII → Optional)*
+*Synced with spec v4.2 (Text-to-SQL → sql_query tool, Phase order updated)*
