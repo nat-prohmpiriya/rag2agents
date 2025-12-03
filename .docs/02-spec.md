@@ -537,7 +537,14 @@ response = llm.generate(scrubbed)
 
 ### 4. Agent System
 
-#### 4.1 Pre-built Agents
+#### 4.1 Agent Types
+
+| Type | Description | Created By |
+|------|-------------|------------|
+| **System Agents** | Pre-built agents from YAML config | Admin |
+| **User Agents** | Custom agents created by users | User |
+
+#### 4.2 Pre-built System Agents
 
 | Agent | Description | Tools |
 |-------|-------------|-------|
@@ -549,7 +556,39 @@ response = llm.generate(scrubbed)
 | **Data Analyst** | Data analysis | SQL query, chart generator, data summary |
 | **Mental Health** | Research assistant ⭐ NEW v3 | PII-safe RAG, anonymized case search |
 
-#### 4.2 Mental Health Agent ⭐ NEW v3
+#### 4.3 User-Created Agents ⭐ NEW
+
+Users can create their own agents with:
+- Custom name, description, icon
+- Custom system prompt
+- Selected tools
+- **Linked documents/project** (personalized knowledge base)
+
+```yaml
+# User Agent Schema
+user_agent:
+  id: uuid
+  user_id: uuid  # Owner
+  name: "My Research Agent"
+  slug: "my-research-agent"
+  description: "ผู้ช่วยวิจัยส่วนตัว"
+  icon: "search"
+  system_prompt: "คุณเป็นผู้ช่วยวิจัย..."
+  tools: ["rag_search", "summarize"]
+  document_ids: [uuid1, uuid2]  # Linked documents
+  project_id: uuid  # Optional: scope to project
+  is_active: true
+  created_at: timestamp
+  updated_at: timestamp
+```
+
+**Why User Agents?**
+- Different users have different documents
+- Personalized system prompts
+- Domain-specific tools
+- Project-scoped knowledge bases
+
+#### 4.4 Mental Health Agent ⭐ NEW v3
 
 ```yaml
 agent:

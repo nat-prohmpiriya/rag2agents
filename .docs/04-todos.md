@@ -25,8 +25,9 @@
 | Chat System | ✅ Done | Streaming, History, Settings, Markdown |
 | Conversation API | ✅ Done | CRUD + Messages |
 | RAG Pipeline | ✅ Done | Document upload, chunking, embedding, retrieval |
+| Project System | ✅ Done | CRUD, Document Assignment, RAG Filtering |
 | PII Protection | ❌ Not Started | Presidio integration |
-| Agent System | ❌ Not Started | - |
+| Agent System | 🔄 In Progress | Backend done, UI done, User agents pending |
 | Text-to-SQL | ❌ Not Started | Schema Linking + User Confirm |
 | Fine-tuning | ❌ Not Started | Job Dispatcher pattern |
 
@@ -198,35 +199,49 @@
 
 ## Phase 4: Agent System
 
-### 4.1 Agent Core
-- [ ] Create base Agent class
-- [ ] Implement agent configuration loader (YAML)
-- [ ] Create agent registry
-- [ ] Implement agent execution engine
-- [ ] Add tool execution framework
+### 4.1 Agent Core (Backend)
+- [x] Create Agent model & schema
+- [x] Implement agent configuration loader (YAML)
+- [x] Create agent registry (TOOL_REGISTRY)
+- [x] Implement agent execution engine (AgentEngine)
+- [x] Add tool execution framework (BaseTool)
+- [x] Create agent routes (list, get, tools)
+- [x] Integrate agent_slug with chat endpoint
 
 ### 4.2 Built-in Tools
-- [ ] Create RAG search tool
+- [x] Create RAG search tool
 - [ ] Create summarize tool
 - [ ] Create calculator tool
 - [ ] Create web search tool (optional)
 
-### 4.3 Pre-built Agents
-- [ ] Create General agent (general.yaml)
+### 4.3 Pre-built System Agents (YAML)
+- [x] Create General agent (general.yaml)
 - [ ] Create HR agent (hr.yaml)
 - [ ] Create Legal agent (legal.yaml)
-- [ ] Create Finance agent (finance.yaml)
+- [x] Create Finance agent (finance.yaml)
 - [ ] Create Research agent (research.yaml)
 - [ ] Create Mental Health agent (mental_health.yaml) - PII-safe
 
-### 4.4 Agent UI
-- [ ] Create agent selector component
-- [ ] Display agent info (name, description, icon)
-- [ ] Implement agent switching per project
-- [ ] Add agent thinking display (step-by-step)
-- [ ] Show tool execution visualization
+### 4.4 Agent UI (Frontend)
+- [x] Create Agent API client (agents.ts)
+- [x] Create Agent store (agents.svelte.ts)
+- [x] Create AgentSelector component (dropdown)
+- [x] Create AgentCard component
+- [x] Create AgentThinking component (step-by-step display)
+- [x] Integrate AgentSelector into ChatHeader
+- [x] Pass agent_slug in chat requests
+- [x] Create Agents page (/agents)
+- [x] Add Agents link to Sidebar
 
-**Phase 4 Deliverable**: User can select different agents for different tasks
+### 4.5 User-Created Agents ⭐ NEW
+- [ ] Update Agent model with user_id, document_ids, project_id
+- [ ] Create agent CRUD API (POST/PUT/DELETE)
+- [ ] Create AgentForm component (create/edit)
+- [ ] Add "New Agent" button on Agents page
+- [ ] Implement document linking in agent form
+- [ ] Implement project scoping
+
+**Phase 4 Deliverable**: User can select different agents for different tasks, create custom agents
 
 ---
 
@@ -271,21 +286,21 @@
 ## Phase 6: Project System
 
 ### 6.1 Project Backend (MVP)
-- [ ] Update Project model (already exists, verify fields)
-- [ ] Create ProjectDocument junction table (many-to-many)
-- [ ] Add project_id to Conversation (optional FK, one-to-many)
-- [ ] Implement project CRUD API
-- [ ] Implement assign/remove documents to project API
-- [ ] Update RAG to filter by project (optional scope)
-- [ ] Create database migration
+- [x] Update Project model (already exists, verify fields)
+- [x] Create ProjectDocument junction table (many-to-many)
+- [x] Add project_id to Conversation (optional FK, one-to-many)
+- [x] Implement project CRUD API
+- [x] Implement assign/remove documents to project API
+- [x] Update RAG to filter by project (optional scope)
+- [x] Create database migration
 
 ### 6.2 Project UI (MVP)
-- [ ] Create project list in sidebar
-- [ ] Implement create/edit project dialog
-- [ ] Add project switching
-- [ ] Create project detail page (show documents/conversations)
-- [ ] Implement assign documents UI
-- [ ] Filter chat by project context
+- [x] Create project list in sidebar
+- [x] Implement create/edit project dialog
+- [x] Add project switching
+- [x] Create project detail page (show documents/conversations)
+- [x] Implement assign documents UI
+- [x] Filter chat by project context
 
 ### 6.3 Conversation Management
 - [x] Create Conversation model
@@ -415,8 +430,8 @@
 8. **Phase 8** - Polish (Production-ready)
 
 ### Current Focus
-> **Phase 2 Complete!** RAG pipeline fully working with Source Citations UI.
-> **Next Step**: Phase 4 (Agent System) or Phase 5 (Text-to-SQL)
+> **Phase 4 In Progress!** Agent System: Backend done, Frontend UI done.
+> **Next Step**: User-Created Agents feature (Backend CRUD + Frontend Form)
 
 ### Blockers
 - None currently
@@ -424,4 +439,4 @@
 ---
 
 *Last updated: December 3, 2024*
-*Synced with spec v3.0*
+*Synced with spec v3.1 (User-Created Agents)*
