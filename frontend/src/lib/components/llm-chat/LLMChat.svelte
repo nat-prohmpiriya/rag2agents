@@ -8,6 +8,7 @@
 	import ChatMessage from './ChatMessage.svelte';
 	import type { ModelConfigValues } from './ModelConfig.svelte';
 	import type { Message as ApiMessage } from '$lib/api/conversations';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
 	interface Message {
 		id: string;
@@ -152,7 +153,8 @@
 					stream: true,
 					use_rag: useRag && hasReadyDocuments,
 					rag_top_k: 5,
-					project_id: projectId
+					project_id: projectId,
+					agent_slug: agentStore.currentSelectedSlug || undefined
 				},
 				(content) => {
 					streamingContent += content;

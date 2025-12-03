@@ -19,6 +19,7 @@
 	import ModelSelector from './ModelSelector.svelte';
 	import ModelConfig, { type ModelConfigValues } from './ModelConfig.svelte';
 	import type { ModelInfo } from '$lib/api/chat';
+	import AgentSelector from '$lib/components/agents/AgentSelector.svelte';
 
 	interface Props {
 		models: ModelInfo[];
@@ -83,6 +84,7 @@
 <header class="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-xl">
 	<div class="flex items-center gap-3">
 		<ModelSelector {models} {selectedModel} onSelect={onModelSelect} {disabled} />
+		<AgentSelector {disabled} />
 
 		<!-- Project Context Badge -->
 		{#if projectName}
