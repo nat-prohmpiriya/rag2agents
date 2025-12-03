@@ -46,6 +46,10 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    agents: Mapped[list["Agent"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
@@ -55,3 +59,4 @@ class User(Base, TimestampMixin):
 from app.models.project import Project  # noqa: E402, F401
 from app.models.conversation import Conversation  # noqa: E402, F401
 from app.models.document import Document  # noqa: E402, F401
+from app.models.agent import Agent  # noqa: E402, F401

@@ -8,6 +8,7 @@ from app.models.message import Message, MessageRole
 from app.models.document import Document, DocumentStatus
 from app.models.chunk import DocumentChunk
 from app.models.project_document import ProjectDocument
+from app.models.agent import Agent, AgentTool
 
 __all__ = [
     "TimestampMixin",
@@ -21,4 +22,6 @@ __all__ = [
     "Document",
     "DocumentStatus",
     "DocumentChunk",
+    "Agent",
+    "AgentTool",
 ]
