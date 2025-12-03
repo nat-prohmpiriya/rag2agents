@@ -1,45 +1,30 @@
-// Sidebar state using Svelte 5 runes
 const STORAGE_KEY = 'sidebar_collapsed';
 
-let collapsed = $state(false);
+class SidebarStore {
+	collapsed = $state(false);
 
-// Initialize from localStorage
-function initialize(): void {
-	if (typeof window === 'undefined') return;
+	initialize() {
+		if (typeof window === 'undefined') return;
 
-	const stored = localStorage.getItem(STORAGE_KEY);
-	if (stored !== null) {
-		collapsed = stored === 'true';
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (stored !== null) {
+			this.collapsed = stored === 'true';
+		}
+	}
+
+	toggle() {
+		this.collapsed = !this.collapsed;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, String(this.collapsed));
+		}
+	}
+
+	setCollapsed(value: boolean) {
+		this.collapsed = value;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, String(value));
+		}
 	}
 }
 
-// Toggle collapsed state
-function toggle(): void {
-	collapsed = !collapsed;
-	if (typeof window !== 'undefined') {
-		localStorage.setItem(STORAGE_KEY, String(collapsed));
-	}
-}
-
-// Set collapsed state directly
-function setCollapsed(value: boolean): void {
-	collapsed = value;
-	if (typeof window !== 'undefined') {
-		localStorage.setItem(STORAGE_KEY, String(value));
-	}
-}
-
-// Export sidebar store
-export function useSidebar() {
-	return {
-		get collapsed() {
-			return collapsed;
-		},
-		initialize,
-		toggle,
-		setCollapsed,
-	};
-}
-
-// Create singleton instance
-export const sidebar = useSidebar();
+export const sidebar = new SidebarStore();

@@ -28,13 +28,6 @@
 		}
 	});
 
-	// Reload projects when auth changes
-	$effect(() => {
-		if (auth.isAuthenticated && projectStore.projects.length === 0) {
-			projectStore.loadProjects();
-		}
-	});
-
 	function handleLogout() {
 		projectStore.clear();
 		auth.logout();

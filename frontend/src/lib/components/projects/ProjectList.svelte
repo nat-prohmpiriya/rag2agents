@@ -25,7 +25,7 @@
 	<!-- Header with title and add button -->
 	<div class="flex items-center justify-between px-1">
 		<span class="text-sm font-medium text-muted-foreground">Projects</span>
-		<Button variant="ghost" size="icon" class="h-6 w-6" onclick={onCreate} disabled={loading}>
+		<Button variant="ghost" size="icon" class="h-6 w-6" onclick={onCreate}>
 			<Plus class="h-4 w-4" />
 		</Button>
 	</div>
@@ -53,7 +53,7 @@
 						onclick={() => onSelect(project.id)}
 						disabled={loading}
 					>
-						<FolderOpen class="h-4 w-4 flex-shrink-0" />
+						<FolderOpen class="h-4 w-4 shrink-0" />
 						<span class="truncate">{project.name}</span>
 					</Button>
 				{/each}
