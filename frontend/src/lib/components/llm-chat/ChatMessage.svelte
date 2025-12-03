@@ -105,20 +105,22 @@
 
 	<div
 		class={cn(
-			'group relative max-w-[80%] rounded-2xl px-4 py-2 text-sm overflow-hidden min-w-0',
+			'group relative max-w-[80%] rounded-2xl px-4 py-2 text-sm min-w-0',
 			isUser ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'
 		)}
 	>
-		<!-- Action buttons (hidden during edit mode) -->
+		<!-- Action buttons (hidden during edit mode) - positioned at bottom right, half outside -->
 		{#if !isEditing}
-			<div class={cn(
-				'absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
-			)}>
+			<div
+				class={cn(
+					'absolute -bottom-3 right-2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg border bg-background shadow-sm px-1 py-0.5'
+				)}
+			>
 				<!-- Edit button (only for last user message) -->
 				{#if isLastUser && isUser && onEdit}
 					<button
 						onclick={startEdit}
-						class="p-1 rounded hover:bg-primary-foreground/20 text-primary-foreground"
+						class="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
 						title="Edit message"
 					>
 						<Pencil class="size-3.5" />
@@ -128,7 +130,7 @@
 				{#if isLastAssistant && !isStreaming && onRegenerate}
 					<button
 						onclick={onRegenerate}
-						class="p-1 rounded hover:bg-background/50 text-muted-foreground"
+						class="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
 						title="Regenerate response"
 					>
 						<RefreshCw class="size-3.5" />
@@ -137,12 +139,7 @@
 				<!-- Copy button -->
 				<button
 					onclick={handleCopy}
-					class={cn(
-						'p-1 rounded',
-						isUser
-							? 'hover:bg-primary-foreground/20 text-primary-foreground'
-							: 'hover:bg-background/50 text-muted-foreground'
-					)}
+					class="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
 					title="Copy message"
 				>
 					{#if copied}
@@ -186,7 +183,9 @@
 			<p class="whitespace-pre-wrap break-words overflow-wrap-anywhere">{content}</p>
 		{:else}
 			<!-- After streaming: render markdown -->
-			<div class="prose prose-sm dark:prose-invert max-w-none overflow-wrap-anywhere [word-break:break-word]">
+			<div
+				class="prose prose-sm dark:prose-invert max-w-none overflow-wrap-anywhere [word-break:break-word]"
+			>
 				{@html renderedContent}
 			</div>
 		{/if}
