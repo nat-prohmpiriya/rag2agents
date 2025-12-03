@@ -14,7 +14,10 @@
       "Bash(uv run python:*)",
       "WebSearch",
       "WebFetch(domain:docs.openwebui.com)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(uv run alembic:*)",
+      "Bash(uv pip install:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

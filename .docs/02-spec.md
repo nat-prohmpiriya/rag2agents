@@ -101,6 +101,21 @@
 - `@traced()` decorator → track input/output ทุก function
 - trace_id ใน response body → dev เห็นง่าย, debug สะดวก
 
+### Conversation Search Stack ⭐ NEW
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Full-text Search** | PostgreSQL tsvector + GIN Index | High-performance text search |
+| **Ranking** | ts_rank | Relevance scoring |
+| **Highlighting** | ts_headline | Snippet with keyword highlight |
+
+**Key Features:**
+- **PostgreSQL Native** - ไม่ต้องติดตั้ง external service (Elasticsearch/Algolia)
+- **GIN Index** - ค้นหาล้าน records ใน milliseconds
+- **Stemming Support** - "running", "runs", "ran" → หาเจอหมด
+- **Relevance Ranking** - เรียงตาม relevance score
+- **Auto Highlight** - `ts_headline` ทำ highlight อัตโนมัติ
+
 ### Testing Stack ⭐ NEW
 
 | Component | Technology | Purpose |
@@ -596,11 +611,15 @@ Before execution, show user:
 | **rag_search** | Search documents | Per-project scope | ✅ Done |
 | **summarize** | Summarize text | - | 🔄 In Progress |
 | **calculator** | Math calculations | - | 🔄 In Progress |
-| **sql_query** | Query database (Text-to-SQL) | Read-only, User confirm | Phase 6 |
-| **code_executor** | Run Python/JS in Docker | Isolated container | Phase 7 |
-| **api_caller** | Call external APIs | Rate limited | Phase 7 |
-| **file_manager** | Read/write user files | Scoped to user dir | Phase 7 |
-| **web_scraper** | Extract web content | Robots.txt compliant | Phase 7 |
+| **sql_query** | Query database (Text-to-SQL) | Read-only, User confirm | Phase 5 |
+| **image_analyze** | Analyze images (Gemini Vision) | - | Phase 6 |
+| **image_gen** | Generate images (Imagen) | Rate limited | Phase 6 |
+| **image_edit** | Edit images (Inpainting) | Rate limited | Phase 6 |
+| **code_executor** | Run Python/JS in Docker | Isolated container | Phase 6 |
+| **api_caller** | Call external APIs | Rate limited | Phase 6 |
+| **file_manager** | Read/write user files | Scoped to user dir | Phase 6 |
+| **web_scraper** | Extract web content | Robots.txt compliant | Phase 6 |
+| **tts** | Text-to-Speech (Gemini TTS) | - | Phase 6 |
 
 #### 7.2 sql_query Tool (Text-to-SQL) ⭐
 
@@ -612,14 +631,35 @@ Before execution, show user:
 
 **See Section 6 for details**
 
-#### 7.3 Multi-Agent Orchestration
+#### 7.3 Image & Multimodal Tools ⭐ NEW
+
+| Tool | Provider | Use Case |
+|------|----------|----------|
+| **image_analyze** | Gemini Vision | วิเคราะห์รูป, อ่าน chart, OCR |
+| **image_gen** | Imagen 3 | สร้างรูปจาก prompt |
+| **image_edit** | Imagen (Inpainting) | แก้ไขบางส่วนของรูป |
+| **tts** | Gemini 2.5 TTS | แปลง text เป็นเสียง |
+
+**Example Use Cases**:
+```
+User: "วิเคราะห์ chart นี้ให้หน่อย" [แนบรูป]
+Agent: [image_analyze] → "ยอดขาย Q3 สูงสุดที่ 2.5M..."
+
+User: "สร้าง logo บริษัท minimal style สีฟ้า"
+Agent: [image_gen] → 🖼️ Generated logo
+
+User: "อ่านข้อความในรูปนี้ให้ฟังหน่อย"
+Agent: [image_analyze] → [tts] → 🔊 Audio output
+```
+
+#### 7.5 Multi-Agent Orchestration
 
 **Orchestrator Pattern**:
 - Orchestrator Agent รับ task จาก user
 - แบ่งงานให้ Specialized Agents (Research, Coder, Writer)
 - รวม results และ respond กลับ user
 
-#### 7.4 Workflow Builder
+#### 7.6 Workflow Builder
 
 Users can create custom workflows:
 - Visual drag-and-drop builder
@@ -975,6 +1015,10 @@ llm-application-framework/
 > "ผมสร้าง RAG Agent Platform ที่เป็น domain-agnostic template รองรับ multi-project แต่ละ project มี isolated knowledge base และ privacy settings ที่แยกกัน สามารถต่อ database ลูกค้าได้โดยตรงผ่าน Text-to-SQL ที่มี Schema Linking หา tables ที่เกี่ยวข้องก่อน ไม่ต้องส่งทั้ง 100 ตาราง และมี User Confirmation ให้ review SQL ก่อนรัน ที่สำคัญคือมี PII Protection ใช้ Presidio mask ข้อมูลส่วนตัวก่อนส่งไป LLM เหมาะกับงาน Mental Health ที่ sensitive สูง"
 
 ### Technical Deep-Dives
+
+**Q: Conversation Search ทำยังไง?** ⭐ NEW
+
+> "ใช้ **PostgreSQL Full-text Search** พร้อม **GIN Index** ครับ ไม่ต้องพึ่ง external service อย่าง Elasticsearch หรือ Algolia ค้นหา conversations ได้ภายใน milliseconds แม้มีข้อมูลล้าน records รองรับ **stemming** (running/runs/ran หาเจอหมด) และ **relevance ranking** พร้อม **auto-highlight** snippet ที่ match เหมือนที่ Gemini และ Claude ทำ"
 
 **Q: ถ้า Database Schema ของลูกค้าซับซ้อนมาก มี 100 ตาราง LLM จะไม่งงเหรอ?** ⭐ NEW
 

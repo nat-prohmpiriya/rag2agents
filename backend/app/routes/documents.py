@@ -3,6 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
@@ -16,6 +17,7 @@ from app.schemas.document import (
     DocumentResponse,
 )
 from app.services import document as document_service
+from app.services.storage import get_storage_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -205,4 +207,53 @@ async def delete_document(
     return BaseResponse(
         trace_id=ctx.trace_id,
         data=MessageResponse(message="Document deleted successfully"),
+    )
+
+
+# Content type mapping for file types
+CONTENT_TYPES = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "txt": "text/plain",
+    "md": "text/markdown",
+    "csv": "text/csv",
+}
+
+
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """
+    Get the raw file content of a document.
+
+    Returns the file with appropriate content type for browser viewing.
+    """
+    document = await document_service.get_document(
+        db=db,
+        document_id=document_id,
+        user_id=current_user.id,
+    )
+
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    storage = get_storage_service()
+
+    try:
+        file_content = await storage.download(document.file_path)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found in storage") from e
+
+    content_type = CONTENT_TYPES.get(document.file_type, "application/octet-stream")
+
+    return Response(
+        content=file_content,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{document.filename}"',
+            "Cache-Control": "private, max-age=3600",
+        },
     )

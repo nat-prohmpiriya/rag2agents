@@ -121,6 +121,39 @@
 - [x] Add message copy button
 - [x] Add regenerate response button
 
+### 1.10 Conversation Search ✅ DONE
+> Full-text search พร้อม highlight แบบ Gemini/Claude
+> ใช้ **PostgreSQL tsvector + GIN Index** - ไม่ต้องติดตั้ง Elasticsearch/Algolia
+
+**Backend (PostgreSQL Full-text Search):**
+- [x] Add `search_vector` tsvector column to messages table
+- [x] Create GIN index for full-text search (`CREATE INDEX ... USING GIN`)
+- [x] Create Alembic migration for search_vector + index
+- [x] Add trigger to auto-update search_vector on INSERT/UPDATE
+- [x] Create search endpoint `GET /api/conversations/search?q=keyword`
+- [x] Implement `ts_rank` for relevance ranking
+- [x] Implement `ts_headline` for snippet with `<mark>` highlight
+- [x] Return: conversation_id, title, snippet (highlighted), match_count, rank
+- [x] Filter by user_id (security)
+
+**Frontend (Search UI):**
+- [x] Add search input to ChatHistorySidebar (with Search icon)
+- [x] Implement debounced search (300ms)
+- [x] Create SearchResults component (integrated in sidebar)
+- [x] Display: title, highlighted snippet, match count
+- [x] Click to navigate to conversation
+- [x] Render `<mark>` highlight from backend response
+- [x] Add "Clear search" button (X icon)
+- [x] Show "No results" state
+- [x] Show loading state while searching
+
+**โม้ได้:**
+- ค้นหาล้าน records ใน **milliseconds** (GIN Index)
+- รองรับ **stemming** (running/runs/ran → หาเจอหมด)
+- **Relevance ranking** (เรียงตาม score)
+- **Auto highlight** snippet
+- **ไม่ต้องจ่าย** Elasticsearch/Algolia
+
 ### 1.9 User Profile & Settings ⭐ NEW
 - [x] User profile fields exist (first_name, last_name)
 - [ ] Create users route file (routes/users.py)
@@ -342,20 +375,26 @@
 
 ## Phase 6: Advanced Tools & Multi-Agent
 
-### 6.1 Advanced Tools
+### 6.1 Image & Multimodal Tools ⭐ NEW
+- [ ] Create image_analyze tool (Gemini Vision)
+- [ ] Create image_gen tool (Imagen 3)
+- [ ] Create image_edit tool (Inpainting)
+- [ ] Create tts tool (Gemini 2.5 TTS)
+
+### 6.2 Advanced Tools
 - [ ] Create code_executor tool (Python/JS in Docker sandbox)
 - [ ] Create api_caller tool (external API integration)
 - [ ] Create file_manager tool (read/write user files)
 - [ ] Create web_scraper tool (extract web content)
 - [ ] Add tool safety measures (rate limiting, sandboxing)
 
-### 6.2 Multi-Agent Orchestration
+### 6.3 Multi-Agent Orchestration
 - [ ] Create Orchestrator Agent (task delegation)
 - [ ] Implement agent-to-agent communication
 - [ ] Create specialized agents (Research, Coder, Writer)
 - [ ] Add task result aggregation
 
-### 6.3 Workflow Builder
+### 6.4 Workflow Builder
 - [ ] Create workflow model & schema
 - [ ] Implement workflow execution engine
 - [ ] Create visual workflow builder UI

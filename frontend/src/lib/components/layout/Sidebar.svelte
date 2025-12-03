@@ -100,7 +100,11 @@
 	}
 </script>
 
-<aside class="flex h-full flex-col border-r bg-background transition-all duration-300 {collapsed ? 'w-16' : 'w-64'}">
+<aside
+	class="flex h-full flex-col border-r bg-background transition-all duration-300 {collapsed
+		? 'w-16'
+		: 'w-64'}"
+>
 	<!-- Logo & Platform Name -->
 	{#if !collapsed}
 		<div class="flex items-center gap-2 p-4">
@@ -120,7 +124,11 @@
 				<Tooltip.Trigger>
 					{#snippet child({ props })}
 						<div {...props}>
-							<svg class="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="currentColor">
+							<svg
+								class="h-6 w-6 text-primary"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
 								<path
 									d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
 									stroke="currentColor"
@@ -132,9 +140,7 @@
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Portal>
-					<Tooltip.Content side="right">
-						RAG Agent Platform
-					</Tooltip.Content>
+					<Tooltip.Content side="right">RAG Agent Platform</Tooltip.Content>
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		</div>
@@ -153,7 +159,11 @@
 								<a
 									{...props}
 									href={item.href}
-									class="flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(item.href) ? 'bg-accent text-accent-foreground' : ''}"
+									class="flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+										item.href
+									)
+										? 'bg-accent text-accent-foreground'
+										: ''}"
 								>
 									<Icon class="h-5 w-5" />
 								</a>
@@ -168,7 +178,11 @@
 				{:else}
 					<a
 						href={item.href}
-						class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(item.href) ? 'bg-accent text-accent-foreground' : ''}"
+						class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+							item.href
+						)
+							? 'bg-accent text-accent-foreground'
+							: ''}"
 					>
 						<Icon class="h-4 w-4" />
 						{item.label}
@@ -180,7 +194,6 @@
 
 	<!-- Chat History (only when expanded) -->
 	{#if !collapsed}
-		<Separator />
 		<div class="flex items-center justify-between px-4 py-2">
 			<span class="text-xs font-medium text-muted-foreground">Recent Chats</span>
 			{#if chatStore.loading}
@@ -200,7 +213,9 @@
 					{/each}
 				</div>
 			{:else if chatStore.conversations.length === 0}
-				<div class="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+				<div
+					class="flex flex-col items-center justify-center py-4 text-center text-muted-foreground"
+				>
 					<MessageSquare class="mb-2 h-6 w-6 opacity-50" />
 					<p class="text-xs">No chats yet</p>
 				</div>
@@ -209,7 +224,11 @@
 					{#each chatStore.conversations as conv (conv.id)}
 						<a
 							href="/chat/{conv.id}"
-							class="group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent {isChatActive(conv.id) ? 'bg-accent' : ''}"
+							class="group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent {isChatActive(
+								conv.id
+							)
+								? 'bg-accent'
+								: ''}"
 							onmouseenter={() => (hoveredChatId = conv.id)}
 							onmouseleave={() => (hoveredChatId = null)}
 						>
@@ -238,7 +257,7 @@
 	{/if}
 
 	<!-- User Avatar & Toggle button -->
-	<div class="mt-auto border-t p-2">
+	<div class="mt-auto p-2">
 		{#if collapsed}
 			<!-- Collapsed: User avatar icon -->
 			{#if user}
@@ -248,12 +267,23 @@
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger>
 									{#snippet child({ props: triggerProps })}
-										<button {...props} {...triggerProps} class="flex w-full items-center justify-center rounded-lg p-2 hover:bg-accent">
+										<button
+											{...props}
+											{...triggerProps}
+											class="flex w-full items-center justify-center rounded-lg p-2 hover:bg-accent"
+										>
 											<Avatar.Root class="h-8 w-8">
 												{#if user.avatar}
-													<Avatar.Image src={user.avatar} alt={user.name} />
+													<Avatar.Image
+														src={user.avatar}
+														alt={user.name}
+													/>
 												{/if}
-												<Avatar.Fallback>{user.name.slice(0, 2).toUpperCase()}</Avatar.Fallback>
+												<Avatar.Fallback
+													>{user.name
+														.slice(0, 2)
+														.toUpperCase()}</Avatar.Fallback
+												>
 											</Avatar.Root>
 										</button>
 									{/snippet}
@@ -261,8 +291,12 @@
 								<DropdownMenu.Content class="w-56" side="right" align="end">
 									<DropdownMenu.Label class="font-normal">
 										<div class="flex flex-col space-y-1">
-											<p class="text-sm font-medium leading-none">{user.name}</p>
-											<p class="text-xs leading-none text-muted-foreground">{user.email}</p>
+											<p class="text-sm font-medium leading-none">
+												{user.name}
+											</p>
+											<p class="text-xs leading-none text-muted-foreground">
+												{user.email}
+											</p>
 										</div>
 									</DropdownMenu.Label>
 									<DropdownMenu.Separator />
@@ -297,15 +331,19 @@
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="ghost" size="icon" class="w-full" onclick={onToggle}>
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="w-full"
+							onclick={onToggle}
+						>
 							<ChevronRight class="h-4 w-4" />
 						</Button>
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Portal>
-					<Tooltip.Content side="right">
-						Expand sidebar
-					</Tooltip.Content>
+					<Tooltip.Content side="right">Expand sidebar</Tooltip.Content>
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		{:else}
@@ -314,16 +352,23 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<button {...props} class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent">
+							<button
+								{...props}
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent"
+							>
 								<Avatar.Root class="h-8 w-8">
 									{#if user.avatar}
 										<Avatar.Image src={user.avatar} alt={user.name} />
 									{/if}
-									<Avatar.Fallback>{user.name.slice(0, 2).toUpperCase()}</Avatar.Fallback>
+									<Avatar.Fallback
+										>{user.name.slice(0, 2).toUpperCase()}</Avatar.Fallback
+									>
 								</Avatar.Root>
 								<div class="flex-1 text-left">
 									<p class="text-sm font-medium leading-none">{user.name}</p>
-									<p class="text-xs text-muted-foreground truncate">{user.email}</p>
+									<p class="text-xs text-muted-foreground truncate">
+										{user.email}
+									</p>
 								</div>
 							</button>
 						{/snippet}

@@ -51,6 +51,7 @@
 		"highlight.js": "^11.11.1",
 		"lucide-svelte": "^0.555.0",
 		"marked": "^17.0.1",
-		"marked-highlight": "^2.2.3"
+		"marked-highlight": "^2.2.3",
+		"pdfjs-dist": "^5.4.449"
 	}
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { FileText, FileSpreadsheet, File, Trash2 } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+	import { FileText, FileSpreadsheet, File, Trash2, ExternalLink } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import type { Document, DocumentStatus } from '$lib/api/documents';
@@ -12,6 +13,7 @@
 	let { document, onDelete }: Props = $props();
 
 	let showConfirm = $state(false);
+	let isClickable = $derived(document.status === 'ready');
 
 	function getStatusVariant(status: DocumentStatus): 'default' | 'secondary' | 'destructive' | 'outline' {
 		switch (status) {
@@ -61,9 +63,21 @@
 		showConfirm = false;
 	}
 
+	function handleClick() {
+		if (isClickable) {
+			goto(`/documents/${document.id}`);
+		}
+	}
+
 </script>
 
-<div class="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/30">
+<div
+	class="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors {isClickable ? 'cursor-pointer hover:bg-muted/50 hover:border-primary/50' : 'hover:bg-muted/30'}"
+	onclick={handleClick}
+	onkeydown={(e) => e.key === 'Enter' && handleClick()}
+	role={isClickable ? 'button' : undefined}
+	tabindex={isClickable ? 0 : undefined}
+>
 	<!-- File Icon -->
 	<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
 		{#if document.file_type.toLowerCase().includes('pdf')}
@@ -94,25 +108,39 @@
 		{getStatusLabel(document.status)}
 	</Badge>
 
-	<!-- Delete Button -->
-	{#if showConfirm}
-		<div class="flex items-center gap-1">
-			<Button variant="destructive" size="sm" onclick={handleConfirmDelete}>
-				Delete
+	<!-- Actions -->
+	<div class="flex items-center gap-1" onclick={(e) => e.stopPropagation()}>
+		{#if isClickable}
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onclick={() => goto(`/documents/${document.id}`)}
+				title="View document"
+				class="shrink-0 text-muted-foreground hover:text-primary"
+			>
+				<ExternalLink class="size-4" />
 			</Button>
-			<Button variant="outline" size="sm" onclick={handleCancelDelete}>
-				Cancel
+		{/if}
+
+		{#if showConfirm}
+			<div class="flex items-center gap-1">
+				<Button variant="destructive" size="sm" onclick={handleConfirmDelete}>
+					Delete
+				</Button>
+				<Button variant="outline" size="sm" onclick={handleCancelDelete}>
+					Cancel
+				</Button>
+			</div>
+		{:else}
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onclick={handleDeleteClick}
+				title="Delete document"
+				class="shrink-0 text-muted-foreground hover:text-destructive"
+			>
+				<Trash2 class="size-4" />
 			</Button>
-		</div>
-	{:else}
-		<Button
-			variant="ghost"
-			size="icon-sm"
-			onclick={handleDeleteClick}
-			title="Delete document"
-			class="shrink-0 text-muted-foreground hover:text-destructive"
-		>
-			<Trash2 class="size-4" />
-		</Button>
-	{/if}
+		{/if}
+	</div>
 </div>
