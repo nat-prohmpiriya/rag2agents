@@ -27,9 +27,9 @@
 	}
 </script>
 
-<button type="button" class="w-full text-left" onclick={onclick}>
+<button type="button" class="w-full h-full text-left cursor-pointer" onclick={onclick}>
 	<Card.Root
-		class="transition-all hover:shadow-md {selected
+		class="h-full flex flex-col transition-all hover:shadow-md {selected
 			? 'ring-2 ring-primary border-primary'
 			: 'hover:border-muted-foreground/50'}"
 	>
@@ -39,21 +39,19 @@
 				<Card.Title class="text-base">{agent.name}</Card.Title>
 			</div>
 		</Card.Header>
-		<Card.Content class="pt-0">
-			{#if agent.description}
-				<p class="text-sm text-muted-foreground mb-3 line-clamp-2">
-					{agent.description}
-				</p>
-			{/if}
-			{#if agent.tools && agent.tools.length > 0}
-				<div class="flex flex-wrap gap-1.5">
+		<Card.Content class="pt-0 flex-1 flex flex-col">
+			<p class="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">
+				{agent.description || ''}
+			</p>
+			<div class="flex flex-wrap gap-1.5 mt-auto">
+				{#if agent.tools && agent.tools.length > 0}
 					{#each agent.tools as tool}
 						<Badge variant="secondary" class="text-xs">
 							{tool}
 						</Badge>
 					{/each}
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</Card.Content>
 	</Card.Root>
 </button>
