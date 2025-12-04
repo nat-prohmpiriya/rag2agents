@@ -649,3 +649,146 @@ export async function getAuditTargetTypes(): Promise<string[]> {
 export async function getAuditAdmins(): Promise<AuditLogAdmin[]> {
 	return fetchApi<AuditLogAdmin[]>('/api/admin/audit/admins');
 }
+
+// Settings Types
+export interface GeneralSettings {
+	site_name: string;
+	default_plan_id: string | null;
+	trial_period_days: number;
+	allow_registration: boolean;
+	require_email_verification: boolean;
+}
+
+export interface PaymentSettings {
+	stripe_publishable_key: string | null;
+	stripe_secret_key: string | null;
+	stripe_webhook_secret: string | null;
+	currency: string;
+	tax_rate_percent: number;
+}
+
+export interface LiteLLMSettings {
+	proxy_url: string | null;
+	master_key: string | null;
+	default_model: string;
+	fallback_model: string | null;
+	request_timeout_seconds: number;
+}
+
+export interface NotificationSettings {
+	slack_webhook_url: string | null;
+	email_enabled: boolean;
+	email_from_name: string;
+	email_from_address: string | null;
+	smtp_host: string | null;
+	smtp_port: number;
+	smtp_username: string | null;
+	smtp_password: string | null;
+	smtp_use_tls: boolean;
+}
+
+export interface AllSettings {
+	general: GeneralSettings;
+	payment: PaymentSettings;
+	litellm: LiteLLMSettings;
+	notification: NotificationSettings;
+}
+
+export interface AllSettingsUpdate {
+	general?: GeneralSettings;
+	payment?: PaymentSettings;
+	litellm?: LiteLLMSettings;
+	notification?: NotificationSettings;
+}
+
+export interface SettingRaw {
+	id: string;
+	key: string;
+	value: string | null;
+	value_json: Record<string, unknown> | null;
+	category: string;
+	description: string | null;
+	is_secret: boolean;
+	is_editable: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+// Settings API Functions
+export async function getAllSettings(): Promise<AllSettings> {
+	return fetchApi<AllSettings>('/api/admin/settings');
+}
+
+export async function updateAllSettings(data: AllSettingsUpdate): Promise<AllSettings> {
+	return fetchApi<AllSettings>('/api/admin/settings', {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function getGeneralSettings(): Promise<GeneralSettings> {
+	return fetchApi<GeneralSettings>('/api/admin/settings/general');
+}
+
+export async function updateGeneralSettings(data: GeneralSettings): Promise<GeneralSettings> {
+	return fetchApi<GeneralSettings>('/api/admin/settings/general', {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function getPaymentSettings(): Promise<PaymentSettings> {
+	return fetchApi<PaymentSettings>('/api/admin/settings/payment');
+}
+
+export async function updatePaymentSettings(data: PaymentSettings): Promise<PaymentSettings> {
+	return fetchApi<PaymentSettings>('/api/admin/settings/payment', {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function getLiteLLMSettings(): Promise<LiteLLMSettings> {
+	return fetchApi<LiteLLMSettings>('/api/admin/settings/litellm');
+}
+
+export async function updateLiteLLMSettings(data: LiteLLMSettings): Promise<LiteLLMSettings> {
+	return fetchApi<LiteLLMSettings>('/api/admin/settings/litellm', {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+	return fetchApi<NotificationSettings>('/api/admin/settings/notification');
+}
+
+export async function updateNotificationSettings(
+	data: NotificationSettings
+): Promise<NotificationSettings> {
+	return fetchApi<NotificationSettings>('/api/admin/settings/notification', {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function initializeSettings(): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>('/api/admin/settings/initialize', {
+		method: 'POST'
+	});
+}
+
+export async function getRawSettings(category?: string): Promise<SettingRaw[]> {
+	const params = category ? `?category=${category}` : '';
+	return fetchApi<SettingRaw[]>(`/api/admin/settings/raw${params}`);
+}
+
+export async function updateRawSetting(
+	key: string,
+	data: { value?: string; value_json?: Record<string, unknown>; description?: string }
+): Promise<SettingRaw> {
+	return fetchApi<SettingRaw>(`/api/admin/settings/raw/${key}`, {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}

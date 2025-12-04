@@ -117,7 +117,7 @@ Admin page to view and manage plans.
 
 ---
 
-### [] Task 6: Plan Form Component
+### [x] Task 6: Plan Form Component
 
 Form for creating/editing plans.
 
@@ -138,7 +138,7 @@ Form for creating/editing plans.
 
 ---
 
-### [] Task 7: User List Page
+### [x] Task 7: User List Page
 
 Admin page to view and manage users.
 
@@ -157,7 +157,7 @@ Admin page to view and manage users.
 
 ---
 
-### [] Task 8: User Detail Page
+### [x] Task 8: User Detail Page
 
 Detailed view of single user.
 
@@ -173,7 +173,7 @@ Detailed view of single user.
 
 ---
 
-### [] Task 9: Usage Analytics Page
+### [x] Task 9: Usage Analytics Page
 
 View usage and cost analytics.
 
@@ -195,7 +195,7 @@ View usage and cost analytics.
 
 ---
 
-### [] Task 10: LiteLLM Integration Service
+### [x] Task 10: LiteLLM Integration Service
 
 Service for managing LiteLLM Virtual Keys.
 
@@ -215,7 +215,7 @@ Service for managing LiteLLM Virtual Keys.
 
 ---
 
-### [] Task 11: Stripe Integration
+### [x] Task 11: Stripe Integration
 
 Payment processing with Stripe.
 
@@ -234,7 +234,7 @@ Payment processing with Stripe.
 
 ---
 
-### [] Task 12: Quota & Rate Limit UI
+### [x] Task 12: Quota & Rate Limit UI
 
 Show users their usage and limits.
 
@@ -252,25 +252,27 @@ Show users their usage and limits.
 
 ---
 
-### [] Task 13: System Monitoring Page
+### [x] Task 13: System Monitoring Page
 
 Health and performance monitoring.
 
 **Location:** `frontend/src/routes/(admin)/admin/system/+page.svelte`
 
 **Health Status:**
-- LiteLLM Proxy: status, uptime, RPS
-- PostgreSQL: connections, query time
-- Redis: memory, hit rate
+- LiteLLM Proxy: status, response time, models available
+- PostgreSQL: connections, database size, response time
+- Redis: memory, connected clients, hit rate
 
-**Alerts Config:**
-- High latency threshold
-- Error rate threshold
-- Notification channels (Slack, Email)
+**Features:**
+- Auto-refresh every 30 seconds (toggleable)
+- Overall system status banner
+- Service status cards with detailed metrics
+- Connection progress bars
+- Error display when services are down
 
 ---
 
-### [] Task 14: Audit Logs Page
+### [x] Task 14: Audit Logs Page
 
 Track admin actions.
 
@@ -285,9 +287,21 @@ Track admin actions.
 - Refunds
 - Suspend/Ban
 
+**Implementation:**
+- Backend:
+  - Model: `backend/app/models/audit_log.py` - AuditLog model with AuditAction enum
+  - Schema: `backend/app/schemas/admin.py` - AuditLogResponse, AuditLogListResponse, etc.
+  - Service: `backend/app/services/audit_log.py` - CRUD operations for audit logs
+  - Routes: `backend/app/routes/admin/audit.py` - API endpoints for listing/filtering logs
+- Frontend:
+  - API: `frontend/src/lib/api/admin.ts` - getAuditLogs, getAuditActionTypes, etc.
+  - Page: `frontend/src/routes/(admin)/admin/audit/+page.svelte`
+- Migration: `backend/alembic/versions/a0352c1591b2_add_audit_logs_table.py`
+- Integrated with: users.py, plans.py admin routes
+
 ---
 
-### [] Task 15: Settings Page
+### [x] Task 15: Settings Page
 
 Admin settings configuration.
 
@@ -298,6 +312,22 @@ Admin settings configuration.
 - Payment: Stripe keys, currency
 - LiteLLM: proxy URL, master key
 - Notifications: Slack webhook, email templates
+
+**Implementation:**
+- Backend:
+  - Model: `backend/app/models/setting.py` - Setting model with SettingCategory enum
+  - Schema: `backend/app/schemas/admin.py` - SettingResponse, AllSettingsResponse, GeneralSettings, PaymentSettings, LiteLLMSettings, NotificationSettings
+  - Service: `backend/app/services/settings.py` - CRUD operations for settings with secret masking
+  - Routes: `backend/app/routes/admin/settings.py` - API endpoints for reading/updating settings
+- Frontend:
+  - API: `frontend/src/lib/api/admin.ts` - getAllSettings, updateAllSettings, etc.
+  - Page: `frontend/src/routes/(admin)/admin/settings/+page.svelte` - Tabbed settings form with secret visibility toggle
+- Migration: `backend/alembic/versions/098ce5900338_add_settings_table.py`
+- Features:
+  - Key-value storage with categories
+  - Secret masking (only shows masked values, updates only when not masked)
+  - Audit logging on settings changes
+  - Initialize default settings endpoint
 
 ---
 

@@ -531,3 +531,122 @@ class AuditLogFilter(BaseModel):
     target_id: uuid.UUID | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
+
+
+# Settings schemas
+class SettingCategory(str, Enum):
+    """Setting category enumeration."""
+
+    GENERAL = "general"
+    PAYMENT = "payment"
+    LITELLM = "litellm"
+    NOTIFICATION = "notification"
+
+
+class SettingResponse(BaseModel):
+    """Single setting response."""
+
+    id: uuid.UUID
+    key: str
+    value: str | None
+    value_json: dict | None
+    category: str
+    description: str | None
+    is_secret: bool
+    is_editable: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SettingUpdate(BaseModel):
+    """Schema for updating a setting."""
+
+    value: str | None = None
+    value_json: dict | None = None
+    description: str | None = None
+
+
+class SettingCreate(BaseModel):
+    """Schema for creating a setting."""
+
+    key: str
+    value: str | None = None
+    value_json: dict | None = None
+    category: str = SettingCategory.GENERAL.value
+    description: str | None = None
+    is_secret: bool = False
+    is_editable: bool = True
+
+
+class SettingsByCategoryResponse(BaseModel):
+    """Settings grouped by category."""
+
+    general: list[SettingResponse] = []
+    payment: list[SettingResponse] = []
+    litellm: list[SettingResponse] = []
+    notification: list[SettingResponse] = []
+
+
+# Structured settings for frontend forms
+class GeneralSettings(BaseModel):
+    """General application settings."""
+
+    site_name: str = "RAG Agent Platform"
+    default_plan_id: str | None = None
+    trial_period_days: int = 14
+    allow_registration: bool = True
+    require_email_verification: bool = True
+
+
+class PaymentSettings(BaseModel):
+    """Payment/Stripe settings."""
+
+    stripe_publishable_key: str | None = None
+    stripe_secret_key: str | None = None  # Will be masked on response
+    stripe_webhook_secret: str | None = None  # Will be masked on response
+    currency: str = "usd"
+    tax_rate_percent: float = 0.0
+
+
+class LiteLLMSettings(BaseModel):
+    """LiteLLM proxy settings."""
+
+    proxy_url: str | None = None
+    master_key: str | None = None  # Will be masked on response
+    default_model: str = "gemini-2.0-flash"
+    fallback_model: str | None = None
+    request_timeout_seconds: int = 60
+
+
+class NotificationSettings(BaseModel):
+    """Notification settings."""
+
+    slack_webhook_url: str | None = None  # Will be masked on response
+    email_enabled: bool = True
+    email_from_name: str = "RAG Agent Platform"
+    email_from_address: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None  # Will be masked on response
+    smtp_use_tls: bool = True
+
+
+class AllSettingsResponse(BaseModel):
+    """All settings response for admin UI."""
+
+    general: GeneralSettings
+    payment: PaymentSettings
+    litellm: LiteLLMSettings
+    notification: NotificationSettings
+
+
+class AllSettingsUpdate(BaseModel):
+    """Update all settings at once."""
+
+    general: GeneralSettings | None = None
+    payment: PaymentSettings | None = None
+    litellm: LiteLLMSettings | None = None
+    notification: NotificationSettings | None = None

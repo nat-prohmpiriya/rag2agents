@@ -24,6 +24,7 @@ from app.routes import webhooks
 from app.routes.admin import audit as admin_audit
 from app.routes.admin import dashboard as admin_dashboard
 from app.routes.admin import plans as admin_plans
+from app.routes.admin import settings as admin_settings
 from app.routes.admin import subscriptions as admin_subscriptions
 from app.routes.admin import system as admin_system
 from app.routes.admin import usage as admin_usage
@@ -94,6 +95,7 @@ app.include_router(billing.router, prefix="/api")
 app.include_router(admin_audit.router, prefix="/api/admin")
 app.include_router(admin_dashboard.router, prefix="/api/admin")
 app.include_router(admin_plans.router, prefix="/api/admin")
+app.include_router(admin_settings.router, prefix="/api/admin")
 app.include_router(admin_subscriptions.router, prefix="/api/admin")
 app.include_router(admin_system.router, prefix="/api/admin")
 app.include_router(admin_usage.router, prefix="/api/admin")
