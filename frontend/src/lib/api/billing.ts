@@ -68,3 +68,40 @@ export async function createPortalSession(returnUrl?: string): Promise<PortalRes
 		body: JSON.stringify({ return_url: returnUrl })
 	});
 }
+
+// User subscription types
+export interface UserSubscription {
+	id: string;
+	plan_id: string;
+	plan_name: string;
+	plan_display_name: string;
+	plan_type: 'free' | 'pro' | 'enterprise';
+	status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'paused' | 'expired';
+	billing_interval: 'monthly' | 'yearly';
+	price: number;
+	currency: string;
+	start_date: string;
+	current_period_start: string | null;
+	current_period_end: string | null;
+	trial_end_date: string | null;
+	canceled_at: string | null;
+	cancel_reason: string | null;
+}
+
+export interface UserInvoice {
+	id: string;
+	invoice_number: string;
+	status: 'draft' | 'pending' | 'paid' | 'void' | 'uncollectible';
+	total: number;
+	amount_paid: number;
+	currency: string;
+	invoice_date: string;
+	paid_at: string | null;
+	stripe_hosted_invoice_url: string | null;
+	stripe_invoice_pdf: string | null;
+}
+
+export interface BillingInfo {
+	subscription: UserSubscription | null;
+	invoices: UserInvoice[];
+}
