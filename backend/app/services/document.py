@@ -273,6 +273,20 @@ async def process_document(db: AsyncSession, document_id: uuid.UUID) -> Document
         logger.info(
             f"Processed document {document_id}: {len(chunks_to_store)} chunks created"
         )
+
+        # Send success notification
+        try:
+            from app.services import notification as notification_service
+            await notification_service.notify_document_processed(
+                db=db,
+                user_id=document.user_id,
+                document_id=document_id,
+                document_name=document.filename,
+                chunk_count=len(chunks_to_store),
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send document processed notification: {notify_err}")
+
         return document
 
     except Exception as e:
@@ -280,6 +294,20 @@ async def process_document(db: AsyncSession, document_id: uuid.UUID) -> Document
         document.error_message = str(e)
         await db.flush()
         logger.error(f"Failed to process document {document_id}: {e}")
+
+        # Send failure notification
+        try:
+            from app.services import notification as notification_service
+            await notification_service.notify_document_failed(
+                db=db,
+                user_id=document.user_id,
+                document_id=document_id,
+                document_name=document.filename,
+                error_message=str(e),
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send document failed notification: {notify_err}")
+
         raise
 
 

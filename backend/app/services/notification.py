@@ -671,3 +671,113 @@ async def notify_subscription_expiring(
         import logging
         logging.getLogger(__name__).error(f"Failed to create subscription expiring notification: {e}")
         return None
+
+
+# ============================================================================
+# Document Notification Helpers
+# ============================================================================
+
+
+async def notify_document_processed(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    document_id: uuid.UUID,
+    document_name: str,
+    chunk_count: int,
+) -> Notification | None:
+    """
+    Send notification when document processing completes successfully.
+
+    Args:
+        db: Database session
+        user_id: User to notify
+        document_id: Document ID
+        document_name: Name of the document
+        chunk_count: Number of chunks created
+
+    Returns:
+        Created notification or None if preferences disabled
+    """
+    try:
+        if not await should_send_notification(
+            db, user_id, NotificationCategory.DOCUMENT, "in_app"
+        ):
+            return None
+
+        message = f"Your document '{document_name}' has been processed successfully."
+        if chunk_count > 0:
+            message += f" {chunk_count} text chunks were created for search."
+
+        return await create_notification(
+            db=db,
+            user_id=user_id,
+            type=NotificationType.DOCUMENT_PROCESSED,
+            category=NotificationCategory.DOCUMENT,
+            title="Document Ready",
+            message=message,
+            priority=NotificationPriority.LOW,
+            action_url=f"/documents/{document_id}",
+            extra_data={
+                "document_id": str(document_id),
+                "document_name": document_name,
+                "chunk_count": chunk_count,
+            },
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to create document processed notification: {e}")
+        return None
+
+
+async def notify_document_failed(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    document_id: uuid.UUID,
+    document_name: str,
+    error_message: str | None = None,
+) -> Notification | None:
+    """
+    Send notification when document processing fails.
+
+    Args:
+        db: Database session
+        user_id: User to notify
+        document_id: Document ID
+        document_name: Name of the document
+        error_message: Error message describing the failure
+
+    Returns:
+        Created notification or None if preferences disabled
+    """
+    try:
+        if not await should_send_notification(
+            db, user_id, NotificationCategory.DOCUMENT, "in_app"
+        ):
+            return None
+
+        message = f"Failed to process document '{document_name}'."
+        if error_message:
+            # Truncate long error messages
+            truncated_error = error_message[:200] + "..." if len(error_message) > 200 else error_message
+            message += f" Error: {truncated_error}"
+        message += " Please try uploading again or contact support if the issue persists."
+
+        return await create_notification(
+            db=db,
+            user_id=user_id,
+            type=NotificationType.DOCUMENT_FAILED,
+            category=NotificationCategory.DOCUMENT,
+            title="Document Processing Failed",
+            message=message,
+            priority=NotificationPriority.HIGH,
+            action_url=f"/documents/{document_id}",
+            extra_data={
+                "document_id": str(document_id),
+                "document_name": document_name,
+                "error_message": error_message,
+            },
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to create document failed notification: {e}")
+        return None
