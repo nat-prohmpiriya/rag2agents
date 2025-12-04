@@ -14,6 +14,13 @@ from app.models.subscription import Subscription, SubscriptionStatus, BillingInt
 from app.models.invoice import Invoice, InvoiceStatus, PaymentMethod
 from app.models.audit_log import AuditLog, AuditAction
 from app.models.setting import Setting, SettingCategory
+from app.models.notification import (
+    Notification,
+    NotificationType,
+    NotificationCategory,
+    NotificationPriority,
+)
+from app.models.notification_preference import NotificationPreference
 
 __all__ = [
     "TimestampMixin",
@@ -41,4 +48,9 @@ __all__ = [
     "AuditAction",
     "Setting",
     "SettingCategory",
+    "Notification",
+    "NotificationType",
+    "NotificationCategory",
+    "NotificationPriority",
+    "NotificationPreference",
 ]
