@@ -5,8 +5,6 @@
       links: [
         { label: "Features", href: "#features" },
         { label: "Pricing", href: "#pricing" },
-        { label: "Documentation", href: "/docs" },
-        { label: "API Reference", href: "/docs/api" },
         { label: "Changelog", href: "/changelog" }
       ]
     },
@@ -14,26 +12,14 @@
       title: "Company",
       links: [
         { label: "About", href: "/about" },
-        { label: "Blog", href: "/blog" },
-        { label: "Careers", href: "/careers" },
         { label: "Contact", href: "/contact" }
-      ]
-    },
-    resources: {
-      title: "Resources",
-      links: [
-        { label: "Getting Started", href: "/docs/getting-started" },
-        { label: "Tutorials", href: "/tutorials" },
-        { label: "Community", href: "/community" },
-        { label: "Support", href: "/support" }
       ]
     },
     legal: {
       title: "Legal",
       links: [
         { label: "Privacy Policy", href: "/privacy" },
-        { label: "Terms of Service", href: "/terms" },
-        { label: "Security", href: "/security" }
+        { label: "Terms of Service", href: "/terms" }
       ]
     }
   };
