@@ -23,6 +23,7 @@ from app.routes import webhooks
 from app.routes.admin import dashboard as admin_dashboard
 from app.routes.admin import plans as admin_plans
 from app.routes.admin import subscriptions as admin_subscriptions
+from app.routes.admin import users as admin_users
 from app.schemas.base import ErrorResponse
 
 
@@ -88,6 +89,7 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(admin_dashboard.router, prefix="/api/admin")
 app.include_router(admin_plans.router, prefix="/api/admin")
 app.include_router(admin_subscriptions.router, prefix="/api/admin")
+app.include_router(admin_users.router, prefix="/api/admin")
 
 # Webhook routers
 app.include_router(webhooks.router, prefix="/api")

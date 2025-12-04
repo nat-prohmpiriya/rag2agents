@@ -232,3 +232,131 @@ export async function cancelSubscription(
 		})
 	});
 }
+
+// User Management Types
+export interface AdminUser {
+	id: string;
+	email: string;
+	username: string;
+	first_name: string | null;
+	last_name: string | null;
+	is_active: boolean;
+	is_superuser: boolean;
+	tier: string;
+	status: string;
+	plan_name: string | null;
+	subscription_status: string | null;
+	tokens_used: number;
+	tokens_limit: number;
+	revenue_total: number;
+	last_active: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface AdminUserListResponse {
+	items: AdminUser[];
+	total: number;
+	page: number;
+	per_page: number;
+	pages: number;
+}
+
+export interface UserActionResult {
+	success: boolean;
+	user_id: string;
+	message: string;
+}
+
+export interface BulkActionResponse {
+	results: UserActionResult[];
+	success_count: number;
+	failure_count: number;
+}
+
+// User Management API Functions
+
+export async function getUsers(
+	page = 1,
+	perPage = 20,
+	filters?: { search?: string; plan?: string; status?: string }
+): Promise<AdminUserListResponse> {
+	const params = new URLSearchParams({
+		page: String(page),
+		per_page: String(perPage)
+	});
+
+	if (filters?.search) params.set('search', filters.search);
+	if (filters?.plan) params.set('plan', filters.plan);
+	if (filters?.status) params.set('status', filters.status);
+
+	return fetchApi<AdminUserListResponse>(`/api/admin/users?${params}`);
+}
+
+export async function getUser(id: string): Promise<AdminUser> {
+	return fetchApi<AdminUser>(`/api/admin/users/${id}`);
+}
+
+export async function updateUser(
+	id: string,
+	data: {
+		first_name?: string;
+		last_name?: string;
+		is_active?: boolean;
+		is_superuser?: boolean;
+		tier?: string;
+	}
+): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}`, {
+		method: 'PUT',
+		body: JSON.stringify(data)
+	});
+}
+
+export async function changeUserPlan(id: string, planId: string): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}/change-plan`, {
+		method: 'POST',
+		body: JSON.stringify({ plan_id: planId })
+	});
+}
+
+export async function suspendUser(id: string, reason?: string): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}/suspend`, {
+		method: 'POST',
+		body: JSON.stringify({ reason })
+	});
+}
+
+export async function activateUser(id: string): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}/activate`, {
+		method: 'POST'
+	});
+}
+
+export async function banUser(id: string, reason?: string): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}/ban`, {
+		method: 'POST',
+		body: JSON.stringify({ reason })
+	});
+}
+
+export async function deleteUser(id: string): Promise<{ message: string }> {
+	return fetchApi<{ message: string }>(`/api/admin/users/${id}`, {
+		method: 'DELETE'
+	});
+}
+
+export async function bulkUserAction(
+	userIds: string[],
+	action: 'change_plan' | 'suspend' | 'activate',
+	planId?: string
+): Promise<BulkActionResponse> {
+	return fetchApi<BulkActionResponse>('/api/admin/users/bulk-action', {
+		method: 'POST',
+		body: JSON.stringify({
+			user_ids: userIds,
+			action,
+			plan_id: planId
+		})
+	});
+}

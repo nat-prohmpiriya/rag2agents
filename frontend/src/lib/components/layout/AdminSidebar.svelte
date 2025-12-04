@@ -9,6 +9,7 @@
 		LayoutDashboard,
 		CreditCard,
 		Users,
+		UserCog,
 		Settings,
 		ChevronLeft,
 		ChevronRight,
@@ -37,6 +38,7 @@
 
 	const navItems: NavItem[] = [
 		{ label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+		{ label: 'Users', href: '/admin/users', icon: UserCog },
 		{ label: 'Plans', href: '/admin/plans', icon: CreditCard },
 		{ label: 'Subscriptions', href: '/admin/subscriptions', icon: Users },
 		{ label: 'Settings', href: '/admin/settings', icon: Settings }
