@@ -12,7 +12,7 @@ from typing import Any
 import httpx
 
 from app.config import settings
-from app.core.tracing import traced
+from app.core.telemetry import traced
 from app.models.plan import Plan
 
 logger = logging.getLogger(__name__)

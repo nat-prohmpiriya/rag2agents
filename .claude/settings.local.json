@@ -25,7 +25,9 @@
       "Bash(npx svelte-kit sync)",
       "Bash(grep:*)",
       "Bash(docker compose:*)",
-      "WebFetch(domain:docs.litellm.ai)"
+      "WebFetch(domain:docs.litellm.ai)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__puppeteer__puppeteer_screenshot"
     ],
     "deny": [],
     "ask": []

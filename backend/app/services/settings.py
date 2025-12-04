@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.tracing import traced
+from app.core.telemetry import traced
 from app.models.setting import Setting, SettingCategory
 from app.schemas.admin import (
     AllSettingsResponse,

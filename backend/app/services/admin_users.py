@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.tracing import traced
+from app.core.telemetry import traced
 from app.models.conversation import Conversation
 from app.models.document import Document
 from app.models.message import Message

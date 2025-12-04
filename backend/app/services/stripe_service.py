@@ -14,7 +14,7 @@ from typing import Any
 import stripe
 
 from app.config import settings
-from app.core.tracing import traced
+from app.core.telemetry import traced
 from app.models.invoice import Invoice, InvoiceStatus, PaymentMethod
 from app.models.plan import Plan
 from app.models.subscription import BillingInterval, Subscription, SubscriptionStatus
