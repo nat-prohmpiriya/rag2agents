@@ -9,6 +9,9 @@ from app.models.document import Document, DocumentStatus
 from app.models.chunk import DocumentChunk
 from app.models.project_document import ProjectDocument
 from app.models.agent import Agent, AgentTool
+from app.models.plan import Plan, PlanType
+from app.models.subscription import Subscription, SubscriptionStatus, BillingInterval
+from app.models.invoice import Invoice, InvoiceStatus, PaymentMethod
 
 __all__ = [
     "TimestampMixin",
@@ -24,4 +27,12 @@ __all__ = [
     "DocumentChunk",
     "Agent",
     "AgentTool",
+    "Plan",
+    "PlanType",
+    "Subscription",
+    "SubscriptionStatus",
+    "BillingInterval",
+    "Invoice",
+    "InvoiceStatus",
+    "PaymentMethod",
 ]
