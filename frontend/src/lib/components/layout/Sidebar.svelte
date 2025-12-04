@@ -316,9 +316,9 @@
 									</DropdownMenu.Label>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item>
-										<a href="/profile" class="flex items-center">
-											<User class="mr-2 h-4 w-4" />
-											Profile
+										<a href="/settings" class="flex items-center">
+											<Settings class="mr-2 h-4 w-4" />
+											Settings
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
@@ -390,9 +390,9 @@
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="w-56" side="right" align="end">
 						<DropdownMenu.Item class="cursor-pointer">
-							<a href="/profile" class="flex items-center">
-								<User class="mr-2 h-4 w-4" />
-								Profile
+							<a href="/settings" class="flex items-center">
+								<Settings class="mr-2 h-4 w-4" />
+								Settings
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
