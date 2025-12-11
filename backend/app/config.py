@@ -48,9 +48,11 @@ class Settings(BaseSettings):
         return []
 
     # OpenTelemetry
-    otel_enabled: bool = False  # Enable when Jaeger is running
+    otel_enabled: bool = False  # Enable when OTEL Collector is running
     otel_service_name: str = "rag-agent-backend"
-    otel_exporter_endpoint: str = "http://localhost:4317"
+    otel_exporter_endpoint: str = "http://localhost:4317"  # OTLP gRPC
+    otel_log_level: str = "INFO"
+    otel_metrics_export_interval_ms: int = 60000  # 60 seconds
 
     # Redis (for rate limiting, shared with LiteLLM)
     redis_host: str = "localhost"

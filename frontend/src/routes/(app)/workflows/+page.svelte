@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { Workflow, Plus, Search, MoreVertical, Copy, Trash2, Play } from 'lucide-svelte';
 	import { workflowsApi, type WorkflowInfo } from '$lib/api/workflows';
 	import { Button } from '$lib/components/ui/button';
@@ -10,9 +11,10 @@
 
 	// State
 	let workflows = $state<WorkflowInfo[]>([]);
-	let loading = $state(true);
+	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let searchQuery = $state('');
+	let initialized = $state(false);
 
 	// Delete confirmation
 	let deleteDialogOpen = $state(false);
@@ -30,8 +32,12 @@
 		);
 	});
 
-	onMount(async () => {
-		await fetchWorkflows();
+	// Use $effect to load data when component mounts in browser
+	$effect(() => {
+		if (browser && !initialized) {
+			initialized = true;
+			fetchWorkflows();
+		}
 	});
 
 	async function fetchWorkflows() {
@@ -41,6 +47,7 @@
 			const response = await workflowsApi.list();
 			workflows = response.workflows;
 		} catch (e) {
+			console.error('[Workflows] Error:', e);
 			error = e instanceof Error ? e.message : 'Failed to load workflows';
 		} finally {
 			loading = false;
@@ -147,7 +154,9 @@
 
 			<!-- Search -->
 			<div class="relative mb-6">
-				<Search class="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+				<Search
+					class="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+				/>
 				<Input
 					type="search"
 					placeholder="Search workflows..."
@@ -215,22 +224,28 @@
 									</button>
 
 									<DropdownMenu.Root>
-										<DropdownMenu.Trigger asChild let:builder>
-											<Button
-												builders={[builder]}
-												variant="ghost"
-												size="sm"
-												class="size-8 p-0 opacity-0 group-hover:opacity-100"
-											>
-												<MoreVertical class="size-4" />
-											</Button>
+										<DropdownMenu.Trigger>
+											{#snippet child({ props })}
+												<Button
+													{...props}
+													variant="ghost"
+													size="sm"
+													class="size-8 p-0 opacity-0 group-hover:opacity-100"
+												>
+													<MoreVertical class="size-4" />
+												</Button>
+											{/snippet}
 										</DropdownMenu.Trigger>
 										<DropdownMenu.Content align="end">
-											<DropdownMenu.Item onclick={() => goto(`/workflows/${workflow.id}`)}>
+											<DropdownMenu.Item
+												onclick={() => goto(`/workflows/${workflow.id}`)}
+											>
 												<Play class="mr-2 size-4" />
 												Open Editor
 											</DropdownMenu.Item>
-											<DropdownMenu.Item onclick={() => duplicateWorkflow(workflow)}>
+											<DropdownMenu.Item
+												onclick={() => duplicateWorkflow(workflow)}
+											>
 												<Copy class="mr-2 size-4" />
 												Duplicate
 											</DropdownMenu.Item>
@@ -257,15 +272,21 @@
 								</button>
 
 								<!-- Footer -->
-								<div class="flex items-center justify-between text-xs text-muted-foreground">
-									<span class={`rounded-full px-2 py-0.5 ${getStatusColor(workflow.status)}`}>
+								<div
+									class="flex items-center justify-between text-xs text-muted-foreground"
+								>
+									<span
+										class={`rounded-full px-2 py-0.5 ${getStatusColor(workflow.status)}`}
+									>
 										{workflow.status}
 									</span>
 									<span>{formatDate(workflow.updated_at)}</span>
 								</div>
 
 								<!-- Node count -->
-								<div class="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+								<div
+									class="mt-2 flex items-center gap-2 text-xs text-muted-foreground"
+								>
 									<span>{workflow.nodes?.length || 0} nodes</span>
 									<span>-</span>
 									<span>{workflow.edges?.length || 0} connections</span>
@@ -285,7 +306,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Delete Workflow</AlertDialog.Title>
 			<AlertDialog.Description>
-				Are you sure you want to delete "{workflowToDelete?.name}"? This action cannot be undone.
+				Are you sure you want to delete "{workflowToDelete?.name}"? This action cannot be
+				undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>

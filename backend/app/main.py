@@ -9,8 +9,13 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.core.context import get_context
 from app.core.exceptions import AppException
-from app.core.telemetry import instrument_app, setup_telemetry
-from app.middleware import TraceContextMiddleware
+from app.core.telemetry import (
+    instrument_app,
+    setup_logging,
+    setup_metrics,
+    setup_telemetry,
+)
+from app.middleware import MetricsMiddleware, TraceContextMiddleware
 from app.routes import (
     agents,
     auth,
@@ -40,8 +45,10 @@ from app.schemas.base import ErrorResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
-    # Startup
+    # Startup - initialize in order: logging -> tracing -> metrics
+    setup_logging()
     setup_telemetry()
+    setup_metrics()
     yield
     # Shutdown (cleanup if needed)
 
@@ -57,6 +64,9 @@ app = FastAPI(
 
 # Instrument with OpenTelemetry (must be before other middleware)
 instrument_app(app)
+
+# Metrics Middleware (records HTTP request metrics)
+app.add_middleware(MetricsMiddleware)
 
 # Trace Context Middleware (creates RequestContext per request)
 app.add_middleware(TraceContextMiddleware)

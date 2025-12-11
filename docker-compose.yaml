@@ -4,54 +4,6 @@
 # With app: docker compose --profile app up -d
 
 services:
-  # ===========================================
-  # Application (Frontend + Backend combined)
-  # ===========================================
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ragagent-app
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    environment:
-      APP_ENV: production
-      DEBUG: "false"
-      DATABASE_URL: "postgresql+asyncpg://ragagent:ragagent123@postgres:5432/ragagent"
-      LITELLM_API_URL: "http://litellm:4000"
-      LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-secret-key-min-32-chars-change-in-production}
-      CORS_ORIGINS: '["http://localhost:8000"]'
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      OTEL_ENABLED: "true"
-      OTEL_SERVICE_NAME: rag-agent-backend
-      OTEL_EXPORTER_ENDPOINT: "http://jaeger:4317"
-      SERVE_STATIC_FILES: "true"
-      STATIC_FILES_PATH: "./static"
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
-    volumes:
-      - app-uploads:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      litellm:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    networks:
-      - app-network
-    profiles:
-      - app
 
   # ===========================================
   # Backend Database (PostgreSQL)
@@ -93,6 +45,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
+
+  # ===========================================
+  # LiteLLM Database (PostgreSQL)
+  # ===========================================
+  litellm-db:
+    image: postgres:16-alpine
+    container_name: ragagent-litellm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-dbpassword9090}
+      POSTGRES_DB: litellm
+    volumes:
+      - litellm-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llmproxy -d litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - app-network
 
@@ -149,87 +122,50 @@ services:
     networks:
       - app-network
 
-  # LiteLLM Database (also used by backend)
-  litellm-db:
-    image: pgvector/pgvector:pg16
-    container_name: ragagent-litellm-db
+  # ===========================================
+  # OpenTelemetry Collector
+  # ===========================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    container_name: ragagent-otel-collector
     restart: unless-stopped
+    profiles:
+      - observability
     ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: llmproxy
-      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-dbpassword9090}
-      POSTGRES_DB: litellm
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8889:8889"   # Prometheus metrics exporter
+      - "13133:13133" # Health check
     volumes:
-      - litellm-postgres-data:/var/lib/postgresql/data
-      - ./infra/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    depends_on:
+      - jaeger
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U llmproxy -d litellm"]
-      interval: 5s
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
     networks:
       - app-network
 
   # ===========================================
-  # Observability: Jaeger (Tracing)
+  # Jaeger (Distributed Tracing UI)
   # ===========================================
   jaeger:
-    image: jaegertracing/all-in-one:1.53
+    image: jaegertracing/all-in-one:1.62
     container_name: ragagent-jaeger
     restart: unless-stopped
+    profiles:
+      - observability
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC (for OTEL collector)
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     networks:
       - app-network
 
-  # ===========================================
-  # Observability: Prometheus (Metrics)
-  # ===========================================
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: ragagent-prometheus
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=15d"
-    networks:
-      - app-network
-    profiles:
-      - monitoring
-
-  # ===========================================
-  # Observability: Grafana (Dashboards)
-  # ===========================================
-  grafana:
-    image: grafana/grafana:latest
-    container_name: ragagent-grafana
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin123
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    depends_on:
-      - prometheus
-      - jaeger
-    networks:
-      - app-network
-    profiles:
-      - monitoring
 
 volumes:
   postgres-data:
@@ -240,10 +176,6 @@ volumes:
     name: ragagent-litellm-postgres-data
   prometheus-data:
     name: ragagent-prometheus-data
-  grafana-data:
-    name: ragagent-grafana-data
-  app-uploads:
-    name: ragagent-app-uploads
 
 networks:
   app-network:
