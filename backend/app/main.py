@@ -23,6 +23,7 @@ from app.routes import (
     profile,
     projects,
     webhooks,
+    workflows,
 )
 from app.routes.admin import audit as admin_audit
 from app.routes.admin import dashboard as admin_dashboard
@@ -95,6 +96,7 @@ app.include_router(agents.router, prefix="/api/v1")
 app.include_router(profile.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(workflows.router, prefix="/api/v1")
 
 # Admin routers
 app.include_router(admin_audit.router, prefix="/api/v1/admin")

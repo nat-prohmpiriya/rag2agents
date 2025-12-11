@@ -394,14 +394,89 @@
 - [ ] Create specialized agents (Research, Coder, Writer)
 - [ ] Add task result aggregation
 
-### 6.4 Workflow Builder
-- [ ] Create workflow model & schema
-- [ ] Implement workflow execution engine
-- [ ] Create visual workflow builder UI
-- [ ] Add trigger-based automation
-- [ ] Implement scheduled tasks
+### 6.4 Workflow Builder (Visual Flow Editor - แบบ Flowise) ⭐ PRIORITY
 
-**Phase 6 Deliverable**: Agents can use powerful tools and collaborate on complex tasks
+> **Tech Stack**: Svelte Flow (@xyflow/svelte) + Custom Nodes
+> **Reference**: [Flowise AgentFlow V2](https://docs.flowiseai.com/using-flowise/agentflowv2)
+
+#### 6.4.1 Database & Models
+- [ ] Create Workflow model (id, name, description, user_id, nodes, edges, is_active)
+- [ ] Create WorkflowExecution model (id, workflow_id, status, inputs, outputs, started_at, completed_at)
+- [ ] Create Alembic migration
+- [ ] Create Pydantic schemas (WorkflowCreate, WorkflowUpdate, WorkflowResponse)
+
+#### 6.4.2 Backend API
+- [ ] Create workflow routes (CRUD: GET, POST, PUT, DELETE /api/workflows)
+- [ ] Create workflow execution endpoint (POST /api/workflows/{id}/execute)
+- [ ] Create workflow execution engine (WorkflowEngine class)
+- [ ] Implement node executor registry (NodeExecutorRegistry)
+- [ ] Add workflow validation service
+
+#### 6.4.3 Node Types (Backend Executors)
+- [ ] StartNode executor - workflow entry point
+- [ ] EndNode executor - workflow exit point
+- [ ] LLMNode executor - call LiteLLM for text generation
+- [ ] AgentNode executor - use existing Agent system
+- [ ] RAGNode executor - search documents with RAG
+- [ ] ToolNode executor - execute specific tool
+- [ ] ConditionNode executor - if/else branching
+- [ ] LoopNode executor - iterate over items
+- [ ] CustomFunctionNode executor - run custom Python code
+- [ ] HTTPNode executor - call external APIs
+
+#### 6.4.4 Frontend - Visual Editor
+- [ ] Install @xyflow/svelte
+- [ ] Create /workflows route and page
+- [ ] Create WorkflowCanvas component (main editor)
+- [ ] Create NodePalette component (drag source - sidebar)
+- [ ] Create WorkflowToolbar component (save, run, settings)
+- [ ] Create MiniMap component
+- [ ] Create WorkflowControls component (zoom, fit)
+
+#### 6.4.5 Frontend - Custom Nodes
+- [ ] Create BaseNode component (common node wrapper)
+- [ ] Create StartNode component (green, single output)
+- [ ] Create EndNode component (red, single input)
+- [ ] Create LLMNode component (model selector, prompt input)
+- [ ] Create AgentNode component (agent selector, tools display)
+- [ ] Create RAGNode component (document selector, query input)
+- [ ] Create ToolNode component (tool selector, params)
+- [ ] Create ConditionNode component (condition editor, 2 outputs)
+- [ ] Create LoopNode component (array input, item output)
+- [ ] Create CustomFunctionNode component (code editor)
+- [ ] Create HTTPNode component (method, url, headers, body)
+
+#### 6.4.6 Frontend - Node Configuration
+- [ ] Create NodeConfigPanel component (right sidebar)
+- [ ] Create LLMConfigForm (model, temperature, max_tokens, system_prompt)
+- [ ] Create AgentConfigForm (agent select, knowledge bases)
+- [ ] Create RAGConfigForm (documents, top_k, threshold)
+- [ ] Create ConditionConfigForm (variable, operator, value)
+- [ ] Create HTTPConfigForm (method, url, headers, body template)
+
+#### 6.4.7 Frontend - Execution & Debug
+- [ ] Create ExecutionPanel component (show running state)
+- [ ] Create NodeExecutionStatus component (pending/running/success/error)
+- [ ] Create ExecutionLog component (step-by-step log)
+- [ ] Create VariableInspector component (view flow state)
+- [ ] Implement real-time execution updates (SSE/WebSocket)
+
+#### 6.4.8 Workflow Management
+- [ ] Create WorkflowList page (/workflows)
+- [ ] Create WorkflowCard component
+- [ ] Create CreateWorkflowDialog
+- [ ] Create DuplicateWorkflow function
+- [ ] Create ImportWorkflow function (JSON)
+- [ ] Create ExportWorkflow function (JSON)
+
+#### 6.4.9 Advanced Features (Later)
+- [ ] Add trigger-based automation (webhook, schedule)
+- [ ] Implement scheduled tasks (cron)
+- [ ] Add workflow templates
+- [ ] Add workflow versioning
+- [ ] Add workflow sharing
+
+**Phase 6 Deliverable**: Visual workflow builder with drag & drop, multiple node types, and execution engine
 
 ---
 

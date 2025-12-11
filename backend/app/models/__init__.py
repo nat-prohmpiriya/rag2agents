@@ -22,6 +22,13 @@ from app.models.notification import (
 )
 from app.models.notification_preference import NotificationPreference
 from app.models.usage import UsageRecord, UsageSummary, RequestType
+from app.models.workflow import (
+    Workflow,
+    WorkflowExecution,
+    WorkflowStatus,
+    ExecutionStatus,
+    NodeType,
+)
 
 __all__ = [
     "TimestampMixin",
@@ -57,4 +64,9 @@ __all__ = [
     "UsageRecord",
     "UsageSummary",
     "RequestType",
+    "Workflow",
+    "WorkflowExecution",
+    "WorkflowStatus",
+    "ExecutionStatus",
+    "NodeType",
 ]
