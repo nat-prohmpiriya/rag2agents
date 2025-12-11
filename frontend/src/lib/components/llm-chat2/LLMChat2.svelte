@@ -23,6 +23,7 @@
 		conversationTitle?: string;
 		initialMessages?: ApiMessage[];
 		initialModel?: string;
+		agentSlug?: string;
 		onConversationCreated?: (id: string) => void;
 		onNewChat?: () => void;
 		onDelete?: () => void;
@@ -33,6 +34,7 @@
 		conversationTitle = 'New conversation',
 		initialMessages = [],
 		initialModel,
+		agentSlug,
 		onConversationCreated,
 		onNewChat,
 		onDelete
@@ -127,6 +129,7 @@
 					message,
 					model: selectedModel.id,
 					conversation_id: conversationId,
+					agent_slug: agentSlug,
 					stream: true
 				},
 				(content) => {
@@ -232,6 +235,7 @@
 					message: lastUserMessage.content,
 					model: selectedModel.id,
 					conversation_id: conversationId,
+					agent_slug: agentSlug,
 					stream: true,
 					skip_user_save: true
 				},

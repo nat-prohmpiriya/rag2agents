@@ -42,14 +42,13 @@
 	});
 
 	function handleAgentClick(agent: AgentInfo) {
-		// Navigate to agent detail page using slug
+		// Navigate to chat with agent
 		goto(`/agents/${agent.slug}`);
 	}
 
-	function handleAgentSelect(slug: string) {
-		// Select agent and go to chat
-		agentStore.selectAgent(slug);
-		goto('/chat');
+	function handleAgentEdit(agent: AgentInfo) {
+		// Navigate to agent edit page
+		goto(`/agents/${agent.slug}/edit`);
 	}
 
 	function openDeleteDialog(agent: AgentInfo) {
@@ -152,7 +151,7 @@
 									{agent}
 									selected={agentStore.currentSelectedSlug === agent.slug}
 									onclick={() => handleAgentClick(agent)}
-									onEdit={() => handleAgentClick(agent)}
+									onEdit={() => handleAgentEdit(agent)}
 									onDelete={() => openDeleteDialog(agent)}
 								/>
 							{/each}

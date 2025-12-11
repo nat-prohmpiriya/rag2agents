@@ -1,8 +1,9 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Pencil, Trash2 } from 'lucide-svelte';
+	import { MoreVertical, Pencil, Trash2 } from 'lucide-svelte';
 	import type { AgentInfo } from '$lib/api';
 
 	interface Props {
@@ -33,7 +34,11 @@
 	}
 </script>
 
-<div class="w-full h-full">
+<button
+	type="button"
+	class="w-full h-full text-left cursor-pointer group"
+	onclick={onclick}
+>
 	<Card.Root
 		class="h-full flex flex-col transition-all hover:shadow-md {selected
 			? 'ring-2 ring-primary border-primary'
@@ -41,52 +46,65 @@
 	>
 		<Card.Header class="pb-3">
 			<div class="flex items-center justify-between">
-				<button type="button" class="flex items-center gap-3 text-left cursor-pointer flex-1" onclick={onclick}>
+				<div class="flex items-center gap-3 flex-1">
 					<span class="text-2xl">{getAgentIcon(agent.icon)}</span>
 					<Card.Title class="text-base">{agent.name}</Card.Title>
-				</button>
+				</div>
 				<div class="flex items-center gap-1">
 					{#if !isUserAgent}
 						<Badge variant="outline" class="text-xs">System</Badge>
 					{/if}
-					{#if isUserAgent && onEdit}
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-8"
-							onclick={(e) => { e.stopPropagation(); onEdit?.(); }}
-						>
-							<Pencil class="size-4" />
-						</Button>
-					{/if}
-					{#if isUserAgent && onDelete}
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-8 text-destructive hover:text-destructive"
-							onclick={(e) => { e.stopPropagation(); onDelete?.(); }}
-						>
-							<Trash2 class="size-4" />
-						</Button>
+					{#if isUserAgent && (onEdit || onDelete)}
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="sm"
+										class="size-8 p-0 opacity-0 group-hover:opacity-100"
+										onclick={(e: MouseEvent) => e.stopPropagation()}
+									>
+										<MoreVertical class="size-4" />
+									</Button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end">
+								{#if onEdit}
+									<DropdownMenu.Item onclick={(e: Event) => { e.stopPropagation(); onEdit?.(); }}>
+										<Pencil class="mr-2 size-4" />
+										Edit
+									</DropdownMenu.Item>
+								{/if}
+								{#if onDelete}
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item
+										class="text-destructive"
+										onclick={(e: Event) => { e.stopPropagation(); onDelete?.(); }}
+									>
+										<Trash2 class="mr-2 size-4" />
+										Delete
+									</DropdownMenu.Item>
+								{/if}
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
 					{/if}
 				</div>
 			</div>
 		</Card.Header>
 		<Card.Content class="pt-0 flex-1 flex flex-col">
-			<button type="button" class="text-left cursor-pointer flex-1 flex flex-col" onclick={onclick}>
-				<p class="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">
-					{agent.description || ''}
-				</p>
-				<div class="flex flex-wrap gap-1.5 mt-auto">
-					{#if agent.tools && agent.tools.length > 0}
-						{#each agent.tools as tool}
-							<Badge variant="secondary" class="text-xs">
-								{tool}
-							</Badge>
-						{/each}
-					{/if}
-				</div>
-			</button>
+			<p class="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">
+				{agent.description || ''}
+			</p>
+			<div class="flex flex-wrap gap-1.5 mt-auto">
+				{#if agent.tools && agent.tools.length > 0}
+					{#each agent.tools as tool}
+						<Badge variant="secondary" class="text-xs">
+							{tool}
+						</Badge>
+					{/each}
+				{/if}
+			</div>
 		</Card.Content>
 	</Card.Root>
-</div>
+</button>
