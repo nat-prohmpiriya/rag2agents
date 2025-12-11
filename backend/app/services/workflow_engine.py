@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -589,7 +589,7 @@ class WorkflowEngine:
             "node_id": node_id,
             "node_type": node_type,
             "status": "running",
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
         }
 
         try:
@@ -606,7 +606,7 @@ class WorkflowEngine:
 
             # Log completion
             log_entry["status"] = "completed"
-            log_entry["completed_at"] = datetime.now(timezone.utc).isoformat()
+            log_entry["completed_at"] = datetime.now(UTC).isoformat()
             log_entry["output"] = result
             log_entry["tokens_used"] = tokens_used
 
@@ -616,7 +616,7 @@ class WorkflowEngine:
         except Exception as e:
             logger.error(f"Node {node_id} execution failed: {e}")
             log_entry["status"] = "failed"
-            log_entry["completed_at"] = datetime.now(timezone.utc).isoformat()
+            log_entry["completed_at"] = datetime.now(UTC).isoformat()
             log_entry["error"] = str(e)
             self.logs.append(log_entry)
             return {"output": None, "error": str(e)}
@@ -671,12 +671,7 @@ class WorkflowEngine:
                 edge_label = edge.get("label", "").lower()
                 source_handle = edge.get("sourceHandle", "").lower()
 
-                if branch == "true" and (edge_label == "true" or source_handle == "true" or not edge_label):
-                    target_id = edge.get("target")
-                    for node in nodes:
-                        if node.get("id") == target_id:
-                            return node
-                elif branch == "false" and (edge_label == "false" or source_handle == "false"):
+                if branch == "true" and (edge_label == "true" or source_handle == "true" or not edge_label) or branch == "false" and (edge_label == "false" or source_handle == "false"):
                     target_id = edge.get("target")
                     for node in nodes:
                         if node.get("id") == target_id:

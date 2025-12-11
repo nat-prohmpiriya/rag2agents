@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -280,7 +280,7 @@ async def execute_workflow(
         outputs={},
         node_states={},
         logs=[],
-        started_at=datetime.now(timezone.utc).isoformat(),
+        started_at=datetime.now(UTC).isoformat(),
     )
     db.add(execution)
     await db.flush()
@@ -299,13 +299,13 @@ async def execute_workflow(
         execution.node_states = result.get("node_states", {})
         execution.logs = result.get("logs", [])
         execution.total_tokens = result.get("total_tokens", 0)
-        execution.completed_at = datetime.now(timezone.utc).isoformat()
+        execution.completed_at = datetime.now(UTC).isoformat()
 
     except Exception as e:
         logger.error(f"Workflow execution failed: {e}")
         execution.status = ExecutionStatus.failed.value
         execution.error_message = str(e)
-        execution.completed_at = datetime.now(timezone.utc).isoformat()
+        execution.completed_at = datetime.now(UTC).isoformat()
 
     await db.flush()
     await db.refresh(execution)
@@ -404,7 +404,7 @@ async def cancel_execution(
         return execution
 
     execution.status = ExecutionStatus.cancelled.value
-    execution.completed_at = datetime.now(timezone.utc).isoformat()
+    execution.completed_at = datetime.now(UTC).isoformat()
 
     await db.flush()
     await db.refresh(execution)

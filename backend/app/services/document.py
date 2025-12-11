@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.telemetry import traced
-from app.models.chunk import DocumentChunk
 from app.models.document import Document, DocumentStatus
 from app.schemas.document import DocumentUpdate
 from app.schemas.vector import ChunkCreate

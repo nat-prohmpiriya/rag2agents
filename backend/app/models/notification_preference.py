@@ -10,7 +10,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 from app.models.base import TimestampMixin
 
-
 # Default category settings
 DEFAULT_CATEGORY_SETTINGS = {
     "billing": {"email": True, "in_app": True},

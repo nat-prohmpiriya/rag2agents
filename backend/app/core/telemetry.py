@@ -247,6 +247,22 @@ def instrument_app(app) -> None:
         logger.error(f"Failed to instrument app: {e}")
 
 
+def instrument_redis() -> None:
+    """Instrument Redis with OpenTelemetry."""
+    if not settings.otel_enabled:
+        return
+
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+
+        RedisInstrumentor().instrument()
+        logger.info("Redis instrumented with OpenTelemetry")
+    except ImportError:
+        logger.warning("Redis instrumentation package not installed")
+    except Exception as e:
+        logger.error(f"Failed to instrument Redis: {e}")
+
+
 def instrument_database(engine) -> None:
     """Instrument SQLAlchemy engine with OpenTelemetry."""
     if not settings.otel_enabled:

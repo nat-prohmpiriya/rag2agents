@@ -94,9 +94,10 @@
 	function handleSelectFromHistory(image: (typeof history)[0]) {
 		if (latestImage) {
 			// Move current latest to history (if not already there)
-			const existsInHistory = history.some((h) => h.id === latestImage.id);
+			const current = latestImage;
+			const existsInHistory = history.some((h) => h.id === current.id);
 			if (!existsInHistory) {
-				history = [latestImage, ...history];
+				history = [current, ...history];
 			}
 		}
 		// Remove selected from history and set as latest
@@ -307,7 +308,7 @@
 							>
 								<img src={image.url} alt={image.prompt} class="size-full object-cover" />
 								<div
-									class="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+									class="absolute inset-0 flex items-end bg-linear-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
 								>
 									<p class="line-clamp-2 p-2 text-xs text-white">{image.prompt}</p>
 								</div>

@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,6 +51,6 @@ class Conversation(Base, TimestampMixin):
 
 
 # Import at the end to avoid circular imports
-from app.models.user import User  # noqa: E402, F401
-from app.models.project import Project  # noqa: E402, F401
 from app.models.message import Message  # noqa: E402, F401
+from app.models.project import Project  # noqa: E402, F401
+from app.models.user import User  # noqa: E402, F401

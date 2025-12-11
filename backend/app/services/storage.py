@@ -1,5 +1,6 @@
 """File storage service with abstract interface and implementations."""
 
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -9,6 +10,8 @@ import aiofiles.os
 
 from app.config import settings
 from app.core.telemetry import traced
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService(ABC):

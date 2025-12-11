@@ -50,5 +50,5 @@ class ProjectDocument(Base):
 
 
 # Import at the end to avoid circular imports
-from app.models.project import Project  # noqa: E402, F401
 from app.models.document import Document  # noqa: E402, F401
+from app.models.project import Project  # noqa: E402, F401

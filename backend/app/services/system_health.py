@@ -1,5 +1,6 @@
 """System health monitoring service."""
 
+import logging
 import time
 from datetime import UTC, datetime
 
@@ -18,6 +19,8 @@ from app.schemas.admin import (
     SystemHealthResponse,
     SystemMetrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @traced()

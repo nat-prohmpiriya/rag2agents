@@ -1,5 +1,6 @@
 """RAG search tool for retrieving relevant document chunks."""
 
+import logging
 import uuid
 from typing import Any
 
@@ -7,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.tools.base import BaseTool, ToolResult
 from app.services.rag import retrieve_context
+
+logger = logging.getLogger(__name__)
 
 
 class RAGSearchTool(BaseTool):

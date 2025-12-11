@@ -1,5 +1,6 @@
 """Notification service for managing user notifications."""
 
+import logging
 import uuid
 from datetime import datetime, timedelta
 
@@ -18,6 +19,8 @@ from app.models.notification_preference import (
     NotificationPreference,
 )
 from app.schemas.notification import NotificationPreferenceUpdate
+
+logger = logging.getLogger(__name__)
 
 
 @traced()

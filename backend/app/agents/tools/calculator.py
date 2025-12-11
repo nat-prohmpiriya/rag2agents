@@ -1,11 +1,14 @@
 """Calculator tool for safe mathematical expression evaluation."""
 
 import ast
+import logging
 import math
 import operator
 from typing import Any
 
 from app.agents.tools.base import BaseTool, ToolResult
+
+logger = logging.getLogger(__name__)
 
 
 # Safe operators for evaluation

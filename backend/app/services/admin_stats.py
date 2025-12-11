@@ -1,7 +1,7 @@
 """Admin statistics service."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from sqlalchemy import func, select
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 @traced()
 async def get_user_stats(db: AsyncSession) -> UserStats:
     """Get user statistics."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
@@ -70,7 +70,7 @@ async def get_usage_stats_from_litellm() -> UsageStats:
             cost_this_month=0.0,
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -148,7 +148,7 @@ async def get_usage_stats_from_litellm() -> UsageStats:
 @traced()
 async def get_revenue_stats(db: AsyncSession) -> RevenueStats:
     """Get revenue statistics."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Calculate MRR from active subscriptions
@@ -232,7 +232,7 @@ async def get_usage_over_time() -> list[DailyUsage]:
     if not settings.litellm_api_key:
         return []
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start_date = now - timedelta(days=30)
 
     try:

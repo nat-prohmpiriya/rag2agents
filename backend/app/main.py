@@ -8,9 +8,11 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.core.context import get_context
+from app.core.database import instrument_database_engine
 from app.core.exceptions import AppException
 from app.core.telemetry import (
     instrument_app,
+    instrument_redis,
     setup_logging,
     setup_metrics,
     setup_telemetry,
@@ -45,9 +47,11 @@ from app.schemas.base import ErrorResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
-    # Startup - initialize in order: logging -> tracing -> metrics
+    # Startup - initialize in order: logging -> tracing -> db -> redis -> metrics
     setup_logging()
     setup_telemetry()
+    instrument_database_engine()
+    instrument_redis()
     setup_metrics()
     yield
     # Shutdown (cleanup if needed)
