@@ -67,6 +67,11 @@
 	});
 
 	async function loadData() {
+		if (!agentSlug) {
+			error = 'Agent slug is required';
+			return;
+		}
+
 		loadingData = true;
 		error = null;
 		try {
