@@ -8,6 +8,7 @@
 	import AgentCard from '$lib/components/agents/AgentCard.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import type { AgentInfo } from '$lib/api';
+	import * as m from '$lib/paraglide/messages';
 
 	// Delete confirmation
 	let deleteDialogOpen = $state(false);
@@ -73,7 +74,7 @@
 </script>
 
 <svelte:head>
-	<title>Agents | RAG Agent</title>
+	<title>{m.agents_page_title()}</title>
 </svelte:head>
 
 <div class="flex h-full flex-col">
@@ -84,11 +85,11 @@
 			<div class="flex items-center justify-between mb-6">
 				<div class="flex items-center gap-3">
 					<Bot class="size-8 text-foreground" />
-					<h1 class="text-3xl font-semibold text-foreground">Agents</h1>
+					<h1 class="text-3xl font-semibold text-foreground">{m.agents_title()}</h1>
 				</div>
 				<Button onclick={() => goto('/agents/new')}>
 					<Plus class="mr-2 size-4" />
-					New Agent
+					{m.agents_new_agent()}
 				</Button>
 			</div>
 
@@ -99,7 +100,7 @@
 				/>
 				<Input
 					type="search"
-					placeholder="Search agents..."
+					placeholder={m.agents_search_placeholder()}
 					class="pl-12 h-12 bg-white border-border rounded-lg text-base"
 					bind:value={searchQuery}
 				/>
@@ -121,22 +122,22 @@
 					<Bot class="size-12 text-muted-foreground/50" />
 					<h3 class="mt-4 text-lg font-medium">
 						{#if searchQuery}
-							No agents found
+							{m.agents_no_found()}
 						{:else}
-							No agents available
+							{m.agents_no_available()}
 						{/if}
 					</h3>
 					<p class="mt-1 text-sm text-muted-foreground">
 						{#if searchQuery}
-							No agents matching "{searchQuery}". Try a different search.
+							{m.agents_no_match({ query: searchQuery })}
 						{:else}
-							Create your first agent to get started.
+							{m.agents_empty_hint()}
 						{/if}
 					</p>
 					{#if !searchQuery}
 						<Button class="mt-4" onclick={() => goto('/agents/new')}>
 							<Plus class="mr-2 size-4" />
-							Create Agent
+							{m.agents_create_agent()}
 						</Button>
 					{/if}
 				</div>
@@ -144,7 +145,7 @@
 				<!-- My Agents Section -->
 				{#if userAgents.length > 0}
 					<section>
-						<h2 class="text-sm font-medium text-muted-foreground mb-4">My Agents</h2>
+						<h2 class="text-sm font-medium text-muted-foreground mb-4">{m.agents_my_agents()}</h2>
 						<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{#each userAgents as agent (agent.slug)}
 								<AgentCard
@@ -162,7 +163,7 @@
 				<!-- System Agents Section -->
 				{#if systemAgents.length > 0}
 					<section>
-						<h2 class="text-sm font-medium text-muted-foreground mb-4">System Agents</h2>
+						<h2 class="text-sm font-medium text-muted-foreground mb-4">{m.agents_system_agents()}</h2>
 						<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{#each systemAgents as agent (agent.slug)}
 								<AgentCard
@@ -184,19 +185,19 @@
 <AlertDialog.Root bind:open={deleteDialogOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Delete Agent</AlertDialog.Title>
+			<AlertDialog.Title>{m.agents_delete_title()}</AlertDialog.Title>
 			<AlertDialog.Description>
-				Are you sure you want to delete "{agentToDelete?.name}"? This action cannot be undone.
+				{m.agents_delete_confirm({ name: agentToDelete?.name || '' })}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={deleting}>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Cancel disabled={deleting}>{m.common_cancel()}</AlertDialog.Cancel>
 			<AlertDialog.Action
 				class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 				disabled={deleting}
 				onclick={handleDelete}
 			>
-				{deleting ? 'Deleting...' : 'Delete'}
+				{deleting ? m.common_deleting() : m.common_delete()}
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { conversationsApi, type Conversation } from '$lib/api';
 	import { chatStore } from '$lib/stores';
+	import * as m from '$lib/paraglide/messages';
 
 	let conversations = $state<Conversation[]>([]);
 	let loading = $state(true);
@@ -123,11 +124,13 @@
 		const hours = Math.floor(diff / (1000 * 60 * 60));
 		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-		if (minutes < 1) return 'Just now';
-		if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-		if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-		if (days === 1) return '1 day ago';
-		if (days < 7) return `${days} days ago`;
+		if (minutes < 1) return m.time_just_now();
+		if (minutes === 1) return m.time_minute_ago({ count: minutes });
+		if (minutes < 60) return m.time_minutes_ago({ count: minutes });
+		if (hours === 1) return m.time_hour_ago({ count: hours });
+		if (hours < 24) return m.time_hours_ago({ count: hours });
+		if (days === 1) return m.time_day_ago();
+		if (days < 7) return m.time_days_ago({ count: days });
 		return date.toLocaleDateString();
 	}
 
@@ -138,12 +141,12 @@
 				? conv.last_message_preview.substring(0, 50) + '...'
 				: conv.last_message_preview;
 		}
-		return 'New conversation';
+		return m.sidebar_new_conversation();
 	}
 </script>
 
 <svelte:head>
-	<title>Chats | RAG Agent</title>
+	<title>{m.chats_page_title()}</title>
 </svelte:head>
 
 <div class="flex h-full flex-col">
@@ -154,11 +157,11 @@
 			<div class="flex items-center justify-between mb-6">
 				<div class="flex items-center gap-3">
 					<MessageSquare class="size-8 text-foreground" />
-					<h1 class="text-3xl font-semibold text-foreground">Chats</h1>
+					<h1 class="text-3xl font-semibold text-foreground">{m.chats_title()}</h1>
 				</div>
 				<Button href="/chat">
 					<Plus class="mr-2 size-4" />
-					New chat
+					{m.chats_new_chat()}
 				</Button>
 			</div>
 
@@ -169,7 +172,7 @@
 				/>
 				<Input
 					type="search"
-					placeholder="Search your chats..."
+					placeholder={m.chats_search_placeholder()}
 					class="pl-12 h-12 bg-white border-border rounded-lg text-base"
 					bind:value={searchQuery}
 				/>
@@ -178,11 +181,11 @@
 			<!-- Stats & Select toggle -->
 			<div class="flex items-center justify-between mb-4">
 				<span class="text-sm text-muted-foreground">
-					{conversations.length} chat{conversations.length !== 1 ? 's' : ''}
+					{conversations.length} {conversations.length === 1 ? 'chat' : 'chats'}
 				</span>
 				{#if !selectMode}
 					<Button variant="link" class="text-sm p-0 h-auto" onclick={toggleSelectMode}>
-						Select
+						{m.common_select()}
 					</Button>
 				{/if}
 			</div>
@@ -194,7 +197,7 @@
 					<div class="w-5 flex justify-center">
 						<Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
 					</div>
-					<span class="text-sm font-medium">{selectedCount} selected</span>
+					<span class="text-sm font-medium">{m.common_selected({ count: selectedCount })}</span>
 
 					<div class="flex items-center gap-1">
 						<Button
@@ -202,7 +205,7 @@
 							size="icon"
 							disabled={selectedCount === 0}
 							onclick={handleDeleteSelected}
-							title="Delete selected"
+							title={m.chats_delete_selected()}
 						>
 							<Trash2 class="size-4" />
 						</Button>
@@ -224,17 +227,17 @@
 			{:else if filteredConversations.length === 0}
 				<div class="flex flex-col items-center p-12 text-center rounded-lg">
 					<MessageSquare class="size-12 text-muted-foreground/50" />
-					<h3 class="mt-4 text-lg font-medium">No conversations</h3>
+					<h3 class="mt-4 text-lg font-medium">{m.chats_no_conversations()}</h3>
 					<p class="mt-1 text-sm text-muted-foreground">
 						{#if searchQuery}
-							No conversations matching "{searchQuery}". Try a different search.
+							{m.chats_no_match({ query: searchQuery })}
 						{:else}
-							Start a new chat to begin a conversation.
+							{m.chats_empty_hint()}
 						{/if}
 					</p>
 					<Button class="mt-4" href="/chat">
 						<Plus class="mr-2 size-4" />
-						New chat
+						{m.chats_new_chat()}
 					</Button>
 				</div>
 			{:else}
@@ -272,7 +275,7 @@
 									{getDisplayTitle(conversation)}
 								</h3>
 								<p class="text-xs font-light text-muted-foreground">
-									Last message {formatTimeAgo(conversation.updated_at)}
+									{m.chats_last_message({ time: formatTimeAgo(conversation.updated_at) })}
 								</p>
 							</div>
 
@@ -298,7 +301,7 @@
 											onclick={(e) => handleDelete(conversation.id, e)}
 										>
 											<Trash2 class="mr-2 size-4" />
-											Delete
+											{m.common_delete()}
 										</DropdownMenu.Item>
 									</DropdownMenu.Content>
 								</DropdownMenu.Root>

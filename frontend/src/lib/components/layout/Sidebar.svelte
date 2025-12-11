@@ -7,9 +7,10 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2, Bell, Sparkles } from 'lucide-svelte';
+	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2, Bell, Sparkles, Workflow } from 'lucide-svelte';
 	import { chatStore, type Conversation } from '$lib/stores';
 	import { NotificationBell } from '$lib/components/notifications';
+	import * as m from '$lib/paraglide/messages';
 
 	let {
 		collapsed = false,
@@ -29,14 +30,16 @@
 		icon: typeof MessageSquare;
 	}
 
-	const navItems: NavItem[] = [
-		{ label: 'New Chat', href: '/chat', icon: MessageSquarePlus },
-		{ label: 'Chats', href: '/chats', icon: MessageSquare },
-		{ label: 'Images', href: '/images', icon: Image },
-		{ label: 'Documents', href: '/documents', icon: FileText },
-		{ label: 'Projects', href: '/projects', icon: Folder },
-		{ label: 'Agents', href: '/agents', icon: Bot },
-	];
+	// navItems needs to be derived to react to locale changes
+	let navItems = $derived<NavItem[]>([
+		{ label: m.nav_new_chat(), href: '/chat', icon: MessageSquarePlus },
+		{ label: m.nav_chats(), href: '/chats', icon: MessageSquare },
+		{ label: m.nav_images(), href: '/images', icon: Image },
+		{ label: m.nav_documents(), href: '/documents', icon: FileText },
+		{ label: m.nav_projects(), href: '/projects', icon: Folder },
+		{ label: m.nav_agents(), href: '/agents', icon: Bot },
+		{ label: 'Workflows', href: '/workflows', icon: Workflow },
+	]);
 
 	let chatHistoryContainer = $state<HTMLDivElement | null>(null);
 	let hoveredChatId = $state<string | null>(null);
@@ -73,7 +76,7 @@
 				? conv.last_message_preview.substring(0, 25) + '...'
 				: conv.last_message_preview;
 		}
-		return 'New conversation';
+		return m.sidebar_new_conversation();
 	}
 
 	async function handleDeleteChat(e: MouseEvent, id: string) {
@@ -183,7 +186,7 @@
 	<!-- Chat History (only when expanded) -->
 	{#if !collapsed}
 		<div class="flex items-center justify-between px-4 py-2">
-			<span class="text-xs font-medium text-muted-foreground">Recent Chats</span>
+			<span class="text-xs font-medium text-muted-foreground">{m.sidebar_recent_chats()}</span>
 			{#if chatStore.loading}
 				<Loader2 class="h-3 w-3 animate-spin text-muted-foreground" />
 			{/if}
@@ -205,7 +208,7 @@
 					class="flex flex-col items-center justify-center py-4 text-center text-muted-foreground"
 				>
 					<MessageSquare class="mb-2 h-6 w-6 opacity-50" />
-					<p class="text-xs">No chats yet</p>
+					<p class="text-xs">{m.sidebar_no_chats()}</p>
 				</div>
 			{:else}
 				<div class="space-y-0.5">
@@ -258,7 +261,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Portal>
-						<Tooltip.Content side="right">Notifications</Tooltip.Content>
+						<Tooltip.Content side="right">{m.nav_notifications()}</Tooltip.Content>
 					</Tooltip.Portal>
 				</Tooltip.Root>
 			{/if}
@@ -306,19 +309,19 @@
 									<DropdownMenu.Item>
 										<a href="/settings" class="flex items-center">
 											<Settings class="mr-2 h-4 w-4" />
-											Settings
+											{m.nav_settings()}
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item>
 										<a href="/settings?tab=billing" class="flex items-center text-primary">
 											<Sparkles class="mr-2 h-4 w-4" />
-											Upgrade Plan
+											{m.nav_upgrade_plan()}
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={onLogout}>
 										<LogOut class="mr-2 h-4 w-4" />
-										Log out
+										{m.nav_logout()}
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
@@ -346,7 +349,7 @@
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Portal>
-					<Tooltip.Content side="right">Expand sidebar</Tooltip.Content>
+					<Tooltip.Content side="right">{m.nav_expand_sidebar()}</Tooltip.Content>
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		{:else}
@@ -354,7 +357,7 @@
 			{#if user}
 				<div class="flex items-center gap-2 px-3 py-2 mb-1">
 					<NotificationBell />
-					<span class="text-sm text-muted-foreground">Notifications</span>
+					<span class="text-sm text-muted-foreground">{m.nav_notifications()}</span>
 				</div>
 			{/if}
 			{#if user}
@@ -386,26 +389,26 @@
 						<DropdownMenu.Item class="cursor-pointer">
 							<a href="/settings" class="flex items-center">
 								<Settings class="mr-2 h-4 w-4" />
-								Settings
+								{m.nav_settings()}
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Item class="cursor-pointer">
 							<a href="/settings?tab=billing" class="flex items-center text-primary">
 								<Sparkles class="mr-2 h-4 w-4" />
-								Upgrade Plan
+								{m.nav_upgrade_plan()}
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={onLogout}>
 							<LogOut class="mr-2 h-4 w-4" />
-							Log out
+							{m.nav_logout()}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{/if}
 			<Button variant="ghost" class="w-full justify-start mt-2" onclick={onToggle}>
 				<ChevronLeft class="mr-2 h-4 w-4" />
-				Collapse
+				{m.nav_collapse()}
 			</Button>
 		{/if}
 	</div>

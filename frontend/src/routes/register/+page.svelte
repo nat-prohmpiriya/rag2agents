@@ -7,6 +7,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import { auth } from '$lib/stores';
 	import { ApiException } from '$lib/types';
+	import * as m from '$lib/paraglide/messages';
 
 	let username = $state('');
 	let email = $state('');
@@ -30,12 +31,12 @@
 		error = null;
 
 		if (!passwordsMatch) {
-			error = 'Passwords do not match';
+			error = m.register_passwords_no_match();
 			return;
 		}
 
 		if (password.length < 8) {
-			error = 'Password must be at least 8 characters';
+			error = m.register_password_min();
 			return;
 		}
 
@@ -54,7 +55,7 @@
 			if (err instanceof ApiException) {
 				error = err.message;
 			} else {
-				error = 'An unexpected error occurred. Please try again.';
+				error = m.common_error_unexpected();
 			}
 		} finally {
 			isLoading = false;
@@ -63,15 +64,15 @@
 </script>
 
 <svelte:head>
-	<title>Register - RAG Agent Platform</title>
+	<title>{m.register_page_title()}</title>
 </svelte:head>
 
 <div class="min-h-screen flex items-center justify-center bg-background px-4">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="space-y-1">
-			<Card.Title class="text-2xl font-bold text-center">Create an account</Card.Title>
+			<Card.Title class="text-2xl font-bold text-center">{m.register_title()}</Card.Title>
 			<Card.Description class="text-center">
-				Enter your details to get started
+				{m.register_description()}
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
@@ -83,26 +84,26 @@
 				{/if}
 
 				<div class="space-y-2">
-					<Label for="username">Username *</Label>
+					<Label for="username">{m.register_username()} *</Label>
 					<Input
 						id="username"
 						type="text"
-						placeholder="johndoe"
+						placeholder={m.register_username_placeholder()}
 						bind:value={username}
 						required
 						disabled={isLoading}
 					/>
 					{#if username && username.length < 3}
-						<p class="text-xs text-destructive">Username must be at least 3 characters</p>
+						<p class="text-xs text-destructive">{m.register_username_min()}</p>
 					{/if}
 				</div>
 
 				<div class="space-y-2">
-					<Label for="email">Email *</Label>
+					<Label for="email">{m.auth_email()} *</Label>
 					<Input
 						id="email"
 						type="email"
-						placeholder="name@example.com"
+						placeholder={m.auth_email_placeholder()}
 						bind:value={email}
 						required
 						disabled={isLoading}
@@ -111,21 +112,21 @@
 
 				<div class="grid grid-cols-2 gap-4">
 					<div class="space-y-2">
-						<Label for="firstName">First Name</Label>
+						<Label for="firstName">{m.register_first_name()}</Label>
 						<Input
 							id="firstName"
 							type="text"
-							placeholder="John"
+							placeholder={m.register_first_name_placeholder()}
 							bind:value={firstName}
 							disabled={isLoading}
 						/>
 					</div>
 					<div class="space-y-2">
-						<Label for="lastName">Last Name</Label>
+						<Label for="lastName">{m.register_last_name()}</Label>
 						<Input
 							id="lastName"
 							type="text"
-							placeholder="Doe"
+							placeholder={m.register_last_name_placeholder()}
 							bind:value={lastName}
 							disabled={isLoading}
 						/>
@@ -133,33 +134,33 @@
 				</div>
 
 				<div class="space-y-2">
-					<Label for="password">Password *</Label>
+					<Label for="password">{m.auth_password()} *</Label>
 					<Input
 						id="password"
 						type="password"
-						placeholder="At least 8 characters"
+						placeholder={m.register_password_placeholder()}
 						bind:value={password}
 						required
 						disabled={isLoading}
 					/>
 					{#if password && password.length < 8}
-						<p class="text-xs text-destructive">Password must be at least 8 characters</p>
+						<p class="text-xs text-destructive">{m.register_password_min()}</p>
 					{/if}
 				</div>
 
 				<div class="space-y-2">
-					<Label for="confirmPassword">Confirm Password *</Label>
+					<Label for="confirmPassword">{m.register_confirm_password()} *</Label>
 					<Input
 						id="confirmPassword"
 						type="password"
-						placeholder="Confirm your password"
+						placeholder={m.register_confirm_password_placeholder()}
 						bind:value={confirmPassword}
 						required
 						disabled={isLoading}
 						class={!passwordsMatch ? 'border-destructive' : ''}
 					/>
 					{#if !passwordsMatch}
-						<p class="text-xs text-destructive">Passwords do not match</p>
+						<p class="text-xs text-destructive">{m.register_passwords_no_match()}</p>
 					{/if}
 				</div>
 
@@ -169,25 +170,25 @@
 							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
 							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 						</svg>
-						Creating account...
+						{m.register_creating_account()}
 					{:else}
-						Create account
+						{m.register_create_account()}
 					{/if}
 				</Button>
 
 				<p class="text-xs text-muted-foreground text-center">
-					By creating an account, you agree to our
-					<a href="/terms" class="text-primary hover:underline">Terms of Service</a>
-					and
-					<a href="/privacy" class="text-primary hover:underline">Privacy Policy</a>
+					{m.register_agree_terms()}
+					<a href="/terms" class="text-primary hover:underline">{m.register_terms_of_service()}</a>
+					{m.register_and()}
+					<a href="/privacy" class="text-primary hover:underline">{m.register_privacy_policy()}</a>
 				</p>
 			</form>
 		</Card.Content>
 		<Card.Footer>
 			<p class="text-center text-sm text-muted-foreground w-full">
-				Already have an account?
+				{m.register_have_account()}
 				<a href="/login" class="text-primary hover:underline font-medium">
-					Sign in
+					{m.auth_sign_in()}
 				</a>
 			</p>
 		</Card.Footer>
