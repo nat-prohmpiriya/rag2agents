@@ -6,14 +6,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import AgentCard from '$lib/components/agents/AgentCard.svelte';
-	import AgentFormDialog from '$lib/components/agents/AgentFormDialog.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import type { AgentInfo, AgentCreate, AgentUpdate } from '$lib/api';
-
-	// Dialog states
-	let formDialogOpen = $state(false);
-	let formDialogMode = $state<'create' | 'edit'>('create');
-	let selectedAgent = $state<AgentInfo | null>(null);
+	import type { AgentInfo } from '$lib/api';
 
 	// Delete confirmation
 	let deleteDialogOpen = $state(false);
@@ -46,34 +40,20 @@
 		agentStore.fetchAgents();
 	});
 
-	function handleAgentClick(slug: string) {
+	function handleAgentClick(agent: AgentInfo) {
+		// Navigate to agent detail page using slug
+		goto(`/agents/${agent.slug}`);
+	}
+
+	function handleAgentSelect(slug: string) {
+		// Select agent and go to chat
 		agentStore.selectAgent(slug);
 		goto('/chat');
-	}
-
-	function openCreateDialog() {
-		selectedAgent = null;
-		formDialogMode = 'create';
-		formDialogOpen = true;
-	}
-
-	function openEditDialog(agent: AgentInfo) {
-		selectedAgent = agent;
-		formDialogMode = 'edit';
-		formDialogOpen = true;
 	}
 
 	function openDeleteDialog(agent: AgentInfo) {
 		agentToDelete = agent;
 		deleteDialogOpen = true;
-	}
-
-	async function handleSave(data: AgentCreate | AgentUpdate) {
-		if (formDialogMode === 'create') {
-			await agentStore.createAgent(data as AgentCreate);
-		} else if (selectedAgent?.id) {
-			await agentStore.updateAgent(selectedAgent.id, data as AgentUpdate);
-		}
 	}
 
 	async function handleDelete() {
@@ -106,7 +86,7 @@
 					<Bot class="size-8 text-foreground" />
 					<h1 class="text-3xl font-semibold text-foreground">Agents</h1>
 				</div>
-				<Button onclick={openCreateDialog}>
+				<Button onclick={() => goto('/agents/new')}>
 					<Plus class="mr-2 size-4" />
 					New Agent
 				</Button>
@@ -154,7 +134,7 @@
 						{/if}
 					</p>
 					{#if !searchQuery}
-						<Button class="mt-4" onclick={openCreateDialog}>
+						<Button class="mt-4" onclick={() => goto('/agents/new')}>
 							<Plus class="mr-2 size-4" />
 							Create Agent
 						</Button>
@@ -170,8 +150,8 @@
 								<AgentCard
 									{agent}
 									selected={agentStore.currentSelectedSlug === agent.slug}
-									onclick={() => handleAgentClick(agent.slug)}
-									onEdit={() => openEditDialog(agent)}
+									onclick={() => handleAgentClick(agent)}
+									onEdit={() => handleAgentClick(agent)}
 									onDelete={() => openDeleteDialog(agent)}
 								/>
 							{/each}
@@ -188,7 +168,7 @@
 								<AgentCard
 									{agent}
 									selected={agentStore.currentSelectedSlug === agent.slug}
-									onclick={() => handleAgentClick(agent.slug)}
+									onclick={() => handleAgentClick(agent)}
 								/>
 							{/each}
 						</div>
@@ -199,14 +179,6 @@
 		</div>
 	</div>
 </div>
-
-<!-- Agent Form Dialog -->
-<AgentFormDialog
-	bind:open={formDialogOpen}
-	mode={formDialogMode}
-	agent={selectedAgent}
-	onSave={handleSave}
-/>
 
 <!-- Delete Confirmation Dialog -->
 <AlertDialog.Root bind:open={deleteDialogOpen}>

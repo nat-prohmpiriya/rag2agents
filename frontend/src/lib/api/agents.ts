@@ -76,7 +76,7 @@ export const agentsApi = {
 	 * Get agent detail by slug
 	 */
 	get: async (slug: string): Promise<AgentDetail> => {
-		return fetchApi<AgentDetail>(`/api/agents/${slug}`, {
+		return fetchApi<AgentDetail>(`/agents/${slug}`, {
 			method: 'GET',
 		});
 	},
@@ -85,7 +85,7 @@ export const agentsApi = {
 	 * Get tools available for an agent
 	 */
 	getTools: async (slug: string): Promise<AgentToolsResponse> => {
-		return fetchApi<AgentToolsResponse>(`/api/agents/${slug}/tools`, {
+		return fetchApi<AgentToolsResponse>(`/agents/${slug}/tools`, {
 			method: 'GET',
 		});
 	},
@@ -104,7 +104,7 @@ export const agentsApi = {
 	 * Update a user agent
 	 */
 	update: async (agentId: string, data: AgentUpdate): Promise<AgentInfo> => {
-		return fetchApi<AgentInfo>(`/api/agents/${agentId}`, {
+		return fetchApi<AgentInfo>(`/agents/${agentId}`, {
 			method: 'PUT',
 			body: JSON.stringify(data),
 		});
@@ -114,7 +114,7 @@ export const agentsApi = {
 	 * Delete a user agent
 	 */
 	delete: async (agentId: string): Promise<void> => {
-		return fetchApi<void>(`/api/agents/${agentId}`, {
+		return fetchApi<void>(`/agents/${agentId}`, {
 			method: 'DELETE',
 		});
 	},

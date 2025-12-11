@@ -28,5 +28,8 @@ dist/
 .DS_Store
 Thumbs.db
 
+
 # Docker volumes (local)
 data/
+
+.claude
