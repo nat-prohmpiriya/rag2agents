@@ -16,6 +16,7 @@
 	import WorkflowCanvas from '$lib/components/workflow/WorkflowCanvas.svelte';
 	import NodePalette from '$lib/components/workflow/NodePalette.svelte';
 	import NodeConfigPanel from '$lib/components/workflow/NodeConfigPanel.svelte';
+	import WorkflowAiChat from '$lib/components/workflow/WorkflowAiChat.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Textarea } from '$lib/components/ui/textarea';
 
@@ -286,3 +287,8 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<!-- Floating AI Chat -->
+{#if workflowId}
+	<WorkflowAiChat workflowId={workflowId} workflowName={workflow?.name || 'Workflow'} />
+{/if}

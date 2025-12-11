@@ -8,6 +8,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import WorkflowAiChat from '$lib/components/workflow/WorkflowAiChat.svelte';
 
 	// State
 	let workflows = $state<WorkflowInfo[]>([]);
@@ -210,19 +211,22 @@
 					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{#each filteredWorkflows as workflow (workflow.id)}
 							<div
-								class="group relative rounded-lg border border-border bg-white p-4 transition-all hover:border-primary/50 hover:shadow-md"
+								class="group relative cursor-pointer rounded-lg border border-border bg-white p-4 transition-all hover:border-primary/50 hover:shadow-md"
+								onclick={() => goto(`/workflows/${workflow.id}`)}
+								onkeydown={(e) => e.key === 'Enter' && goto(`/workflows/${workflow.id}`)}
+								role="button"
+								tabindex="0"
 							>
 								<!-- Header -->
 								<div class="mb-3 flex items-start justify-between">
-									<button
-										class="flex-1 text-left"
-										onclick={() => goto(`/workflows/${workflow.id}`)}
-									>
+									<div class="flex-1">
 										<h3 class="font-medium text-foreground line-clamp-1">
 											{workflow.name}
 										</h3>
-									</button>
+									</div>
 
+									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+									<div onclick={(e) => e.stopPropagation()}>
 									<DropdownMenu.Root>
 										<DropdownMenu.Trigger>
 											{#snippet child({ props })}
@@ -259,17 +263,13 @@
 											</DropdownMenu.Item>
 										</DropdownMenu.Content>
 									</DropdownMenu.Root>
+									</div>
 								</div>
 
 								<!-- Description -->
-								<button
-									class="w-full text-left"
-									onclick={() => goto(`/workflows/${workflow.id}`)}
-								>
-									<p class="mb-3 text-sm text-muted-foreground line-clamp-2">
-										{workflow.description || 'No description'}
-									</p>
-								</button>
+								<p class="mb-3 text-sm text-muted-foreground line-clamp-2">
+									{workflow.description || 'No description'}
+								</p>
 
 								<!-- Footer -->
 								<div
@@ -322,3 +322,6 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+<!-- Floating AI Chat -->
+<WorkflowAiChat workflowId="general" workflowName="Workflows" />
