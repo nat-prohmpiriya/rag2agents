@@ -50,7 +50,7 @@ export const projectsApi = {
 	 * Create a new project
 	 */
 	create: async (data: ProjectCreate): Promise<Project> => {
-		return fetchApi<Project>('/api/projects', {
+		return fetchApi<Project>('/projects', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});

@@ -67,7 +67,7 @@ export const agentsApi = {
 	 * List all available agents
 	 */
 	list: async (): Promise<AgentListResponse> => {
-		return fetchApi<AgentListResponse>('/api/agents', {
+		return fetchApi<AgentListResponse>('/agents', {
 			method: 'GET',
 		});
 	},
@@ -94,7 +94,7 @@ export const agentsApi = {
 	 * Create a new user agent
 	 */
 	create: async (data: AgentCreate): Promise<AgentInfo> => {
-		return fetchApi<AgentInfo>('/api/agents', {
+		return fetchApi<AgentInfo>('/agents', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});

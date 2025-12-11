@@ -72,7 +72,7 @@ export const conversationsApi = {
 	 * Create a new conversation
 	 */
 	create: async (data?: CreateConversationRequest): Promise<Conversation> => {
-		return fetchApi<Conversation>('/api/conversations', {
+		return fetchApi<Conversation>('/conversations', {
 			method: 'POST',
 			body: JSON.stringify(data || {}),
 		});

@@ -130,7 +130,7 @@ export interface SubscriptionListResponse {
 // API Functions
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-	return fetchApi<DashboardStats>('/api/admin/dashboard');
+	return fetchApi<DashboardStats>('/admin/dashboard');
 }
 
 export async function getPlans(
@@ -151,7 +151,7 @@ export async function getPlan(id: string): Promise<Plan> {
 }
 
 export async function createPlan(data: Partial<Plan>): Promise<Plan> {
-	return fetchApi<Plan>('/api/admin/plans', {
+	return fetchApi<Plan>('/admin/plans', {
 		method: 'POST',
 		body: JSON.stringify(data)
 	});
@@ -357,7 +357,7 @@ export async function bulkUserAction(
 	action: 'change_plan' | 'suspend' | 'activate',
 	planId?: string
 ): Promise<BulkActionResponse> {
-	return fetchApi<BulkActionResponse>('/api/admin/users/bulk-action', {
+	return fetchApi<BulkActionResponse>('/admin/users/bulk-action', {
 		method: 'POST',
 		body: JSON.stringify({
 			user_ids: userIds,
@@ -567,11 +567,11 @@ export interface SystemMetrics {
 
 // System Health API Functions
 export async function getSystemHealth(): Promise<SystemHealth> {
-	return fetchApi<SystemHealth>('/api/admin/system/health');
+	return fetchApi<SystemHealth>('/admin/system/health');
 }
 
 export async function getSystemMetrics(): Promise<SystemMetrics> {
-	return fetchApi<SystemMetrics>('/api/admin/system/metrics');
+	return fetchApi<SystemMetrics>('/admin/system/metrics');
 }
 
 // Audit Log Types
@@ -645,15 +645,15 @@ export async function getAuditLog(id: string): Promise<AuditLog> {
 }
 
 export async function getAuditActionTypes(): Promise<AuditActionType[]> {
-	return fetchApi<AuditActionType[]>('/api/admin/audit/actions');
+	return fetchApi<AuditActionType[]>('/admin/audit/actions');
 }
 
 export async function getAuditTargetTypes(): Promise<string[]> {
-	return fetchApi<string[]>('/api/admin/audit/target-types');
+	return fetchApi<string[]>('/admin/audit/target-types');
 }
 
 export async function getAuditAdmins(): Promise<AuditLogAdmin[]> {
-	return fetchApi<AuditLogAdmin[]>('/api/admin/audit/admins');
+	return fetchApi<AuditLogAdmin[]>('/admin/audit/admins');
 }
 
 // Settings Types
@@ -722,64 +722,64 @@ export interface SettingRaw {
 
 // Settings API Functions
 export async function getAllSettings(): Promise<AllSettings> {
-	return fetchApi<AllSettings>('/api/admin/settings');
+	return fetchApi<AllSettings>('/admin/settings');
 }
 
 export async function updateAllSettings(data: AllSettingsUpdate): Promise<AllSettings> {
-	return fetchApi<AllSettings>('/api/admin/settings', {
+	return fetchApi<AllSettings>('/admin/settings', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function getGeneralSettings(): Promise<GeneralSettings> {
-	return fetchApi<GeneralSettings>('/api/admin/settings/general');
+	return fetchApi<GeneralSettings>('/admin/settings/general');
 }
 
 export async function updateGeneralSettings(data: GeneralSettings): Promise<GeneralSettings> {
-	return fetchApi<GeneralSettings>('/api/admin/settings/general', {
+	return fetchApi<GeneralSettings>('/admin/settings/general', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function getPaymentSettings(): Promise<PaymentSettings> {
-	return fetchApi<PaymentSettings>('/api/admin/settings/payment');
+	return fetchApi<PaymentSettings>('/admin/settings/payment');
 }
 
 export async function updatePaymentSettings(data: PaymentSettings): Promise<PaymentSettings> {
-	return fetchApi<PaymentSettings>('/api/admin/settings/payment', {
+	return fetchApi<PaymentSettings>('/admin/settings/payment', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function getLiteLLMSettings(): Promise<LiteLLMSettings> {
-	return fetchApi<LiteLLMSettings>('/api/admin/settings/litellm');
+	return fetchApi<LiteLLMSettings>('/admin/settings/litellm');
 }
 
 export async function updateLiteLLMSettings(data: LiteLLMSettings): Promise<LiteLLMSettings> {
-	return fetchApi<LiteLLMSettings>('/api/admin/settings/litellm', {
+	return fetchApi<LiteLLMSettings>('/admin/settings/litellm', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
-	return fetchApi<NotificationSettings>('/api/admin/settings/notification');
+	return fetchApi<NotificationSettings>('/admin/settings/notification');
 }
 
 export async function updateNotificationSettings(
 	data: NotificationSettings
 ): Promise<NotificationSettings> {
-	return fetchApi<NotificationSettings>('/api/admin/settings/notification', {
+	return fetchApi<NotificationSettings>('/admin/settings/notification', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function initializeSettings(): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>('/api/admin/settings/initialize', {
+	return fetchApi<{ message: string }>('/admin/settings/initialize', {
 		method: 'POST'
 	});
 }

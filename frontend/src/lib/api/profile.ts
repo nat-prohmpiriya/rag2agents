@@ -59,14 +59,14 @@ export const profileApi = {
 	 * Get current user's profile
 	 */
 	getProfile: async (): Promise<UserProfile> => {
-		return fetchApi<UserProfile>('/api/profile');
+		return fetchApi<UserProfile>('/profile');
 	},
 
 	/**
 	 * Update current user's profile
 	 */
 	updateProfile: async (data: UserUpdate): Promise<UserProfile> => {
-		return fetchApi<UserProfile>('/api/profile', {
+		return fetchApi<UserProfile>('/profile', {
 			method: 'PUT',
 			body: JSON.stringify(data),
 		});
@@ -76,7 +76,7 @@ export const profileApi = {
 	 * Change current user's password
 	 */
 	changePassword: async (data: ChangePasswordRequest): Promise<MessageResponse> => {
-		return fetchApi<MessageResponse>('/api/profile/change-password', {
+		return fetchApi<MessageResponse>('/profile/change-password', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -86,7 +86,7 @@ export const profileApi = {
 	 * Delete current user's account (soft delete)
 	 */
 	deleteAccount: async (data: DeleteAccountRequest): Promise<MessageResponse> => {
-		return fetchApi<MessageResponse>('/api/profile/delete-account', {
+		return fetchApi<MessageResponse>('/profile/delete-account', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -96,13 +96,13 @@ export const profileApi = {
 	 * Get current user's usage statistics
 	 */
 	getStats: async (): Promise<UserStats> => {
-		return fetchApi<UserStats>('/api/profile/stats');
+		return fetchApi<UserStats>('/profile/stats');
 	},
 
 	/**
 	 * Get current user's usage data (tokens, cost, quota)
 	 */
 	getUsage: async (): Promise<UserUsage> => {
-		return fetchApi<UserUsage>('/api/profile/usage');
+		return fetchApi<UserUsage>('/profile/usage');
 	},
 };

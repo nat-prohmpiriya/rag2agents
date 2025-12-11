@@ -30,7 +30,7 @@ export const documentsApi = {
 	 * Upload a document file
 	 */
 	upload: async (file: File, onProgress?: (percent: number) => void): Promise<Document> => {
-		return uploadFile<Document>('/api/documents', file, onProgress);
+		return uploadFile<Document>('/documents', file, onProgress);
 	},
 
 	/**

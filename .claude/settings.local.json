@@ -27,7 +27,16 @@
       "Bash(docker compose:*)",
       "WebFetch(domain:docs.litellm.ai)",
       "mcp__puppeteer__puppeteer_navigate",
-      "mcp__puppeteer__puppeteer_screenshot"
+      "mcp__puppeteer__puppeteer_screenshot",
+      "Bash(rm:*)",
+      "Bash(xargs:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker start:*)",
+      "Bash(uv lock:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker run:*)",
+      "Bash(docker build:*)",
+      "Bash(docker stop:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,7 +6,7 @@ export const authApi = {
 	 * Login with email and password
 	 */
 	login: async (data: LoginRequest): Promise<TokenResponse> => {
-		const response = await fetchApi<TokenResponse>('/api/auth/login', {
+		const response = await fetchApi<TokenResponse>('/auth/login', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -22,7 +22,7 @@ export const authApi = {
 	 * Register new user
 	 */
 	register: async (data: RegisterRequest): Promise<User> => {
-		const response = await fetchApi<User>('/api/auth/register', {
+		const response = await fetchApi<User>('/auth/register', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -35,7 +35,7 @@ export const authApi = {
 	 */
 	logout: async (): Promise<void> => {
 		try {
-			await fetchApi<MessageResponse>('/api/auth/logout', { method: 'POST' });
+			await fetchApi<MessageResponse>('/auth/logout', { method: 'POST' });
 		} catch {
 			// Ignore errors, still clear local tokens
 		}
@@ -46,7 +46,7 @@ export const authApi = {
 	 * Get current user info
 	 */
 	me: (): Promise<User> => {
-		return fetchApi<User>('/api/auth/me');
+		return fetchApi<User>('/auth/me');
 	},
 
 	/**
@@ -58,7 +58,7 @@ export const authApi = {
 			throw new Error('No refresh token available');
 		}
 
-		const response = await fetchApi<TokenResponse>('/api/auth/refresh', {
+		const response = await fetchApi<TokenResponse>('/auth/refresh', {
 			method: 'POST',
 			body: JSON.stringify({ refresh_token: refreshToken }),
 		});

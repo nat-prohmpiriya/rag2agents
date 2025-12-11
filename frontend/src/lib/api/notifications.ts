@@ -114,7 +114,7 @@ export async function getNotifications(
 	if (params.unread_only) searchParams.set('unread_only', 'true');
 
 	const query = searchParams.toString();
-	const url = query ? `/api/notifications?${query}` : '/api/notifications';
+	const url = query ? `/api/notifications?${query}` : '/notifications';
 
 	return fetchApi<NotificationListResponse>(url);
 }
@@ -123,7 +123,7 @@ export async function getNotifications(
  * Get unread notification count for badge display
  */
 export async function getUnreadCount(): Promise<UnreadCountResponse> {
-	return fetchApi<UnreadCountResponse>('/api/notifications/unread-count');
+	return fetchApi<UnreadCountResponse>('/notifications/unread-count');
 }
 
 /**
@@ -139,7 +139,7 @@ export async function markAsRead(notificationId: string): Promise<MarkAsReadResp
  * Mark all notifications as read
  */
 export async function markAllAsRead(): Promise<MarkAllAsReadResponse> {
-	return fetchApi<MarkAllAsReadResponse>('/api/notifications/read-all', {
+	return fetchApi<MarkAllAsReadResponse>('/notifications/read-all', {
 		method: 'POST'
 	});
 }
@@ -159,7 +159,7 @@ export async function deleteNotification(
  * Get notification preferences for the current user
  */
 export async function getPreferences(): Promise<NotificationPreference> {
-	return fetchApi<NotificationPreference>('/api/notifications/preferences');
+	return fetchApi<NotificationPreference>('/notifications/preferences');
 }
 
 /**
@@ -168,7 +168,7 @@ export async function getPreferences(): Promise<NotificationPreference> {
 export async function updatePreferences(
 	data: NotificationPreferenceUpdate
 ): Promise<NotificationPreference> {
-	return fetchApi<NotificationPreference>('/api/notifications/preferences', {
+	return fetchApi<NotificationPreference>('/notifications/preferences', {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});

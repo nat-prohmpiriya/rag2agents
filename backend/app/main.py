@@ -85,30 +85,30 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 # Routers
-app.include_router(health.router, tags=["Health"])
-app.include_router(auth.router, prefix="/api")
-app.include_router(chat.router, prefix="/api")
-app.include_router(conversations.router, prefix="/api")
-app.include_router(documents.router, prefix="/api")
-app.include_router(projects.router, prefix="/api")
-app.include_router(agents.router, prefix="/api")
-app.include_router(profile.router, prefix="/api")
-app.include_router(billing.router, prefix="/api")
-app.include_router(notifications.router, prefix="/api")
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(conversations.router, prefix="/api/v1")
+app.include_router(documents.router, prefix="/api/v1")
+app.include_router(projects.router, prefix="/api/v1")
+app.include_router(agents.router, prefix="/api/v1")
+app.include_router(profile.router, prefix="/api/v1")
+app.include_router(billing.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 # Admin routers
-app.include_router(admin_audit.router, prefix="/api/admin")
-app.include_router(admin_dashboard.router, prefix="/api/admin")
-app.include_router(admin_notifications.router, prefix="/api/admin")
-app.include_router(admin_plans.router, prefix="/api/admin")
-app.include_router(admin_settings.router, prefix="/api/admin")
-app.include_router(admin_subscriptions.router, prefix="/api/admin")
-app.include_router(admin_system.router, prefix="/api/admin")
-app.include_router(admin_usage.router, prefix="/api/admin")
-app.include_router(admin_users.router, prefix="/api/admin")
+app.include_router(admin_audit.router, prefix="/api/v1/admin")
+app.include_router(admin_dashboard.router, prefix="/api/v1/admin")
+app.include_router(admin_notifications.router, prefix="/api/v1/admin")
+app.include_router(admin_plans.router, prefix="/api/v1/admin")
+app.include_router(admin_settings.router, prefix="/api/v1/admin")
+app.include_router(admin_subscriptions.router, prefix="/api/v1/admin")
+app.include_router(admin_system.router, prefix="/api/v1/admin")
+app.include_router(admin_usage.router, prefix="/api/v1/admin")
+app.include_router(admin_users.router, prefix="/api/v1/admin")
 
 # Webhook routers
-app.include_router(webhooks.router, prefix="/api")
+app.include_router(webhooks.router, prefix="/api/v1")
 
 # Serve static files (frontend) - must be last to not override API routes
 if settings.serve_static_files and os.path.exists(settings.static_files_path):
