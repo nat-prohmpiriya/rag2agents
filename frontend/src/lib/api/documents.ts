@@ -38,7 +38,7 @@ export const documentsApi = {
 	 */
 	list: async (page: number = 1, perPage: number = 20): Promise<PaginatedResponse<Document>> => {
 		return fetchApi<PaginatedResponse<Document>>(
-			`/api/documents?page=${page}&per_page=${perPage}`,
+			`/documents?page=${page}&per_page=${perPage}`,
 			{ method: 'GET' }
 		);
 	},
@@ -47,7 +47,7 @@ export const documentsApi = {
 	 * Get document detail
 	 */
 	get: async (id: string): Promise<DocumentDetail> => {
-		return fetchApi<DocumentDetail>(`/api/documents/${id}`, {
+		return fetchApi<DocumentDetail>(`/documents/${id}`, {
 			method: 'GET',
 		});
 	},
@@ -56,7 +56,7 @@ export const documentsApi = {
 	 * Update document metadata
 	 */
 	update: async (id: string, data: DocumentUpdate): Promise<Document> => {
-		return fetchApi<Document>(`/api/documents/${id}`, {
+		return fetchApi<Document>(`/documents/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
@@ -66,7 +66,7 @@ export const documentsApi = {
 	 * Delete a document
 	 */
 	delete: async (id: string): Promise<void> => {
-		return fetchApi<void>(`/api/documents/${id}`, {
+		return fetchApi<void>(`/documents/${id}`, {
 			method: 'DELETE',
 		});
 	},

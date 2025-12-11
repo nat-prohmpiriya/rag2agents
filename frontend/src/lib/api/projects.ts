@@ -32,7 +32,7 @@ export const projectsApi = {
 	 */
 	list: async (page: number = 1, perPage: number = 20): Promise<PaginatedResponse<Project>> => {
 		return fetchApi<PaginatedResponse<Project>>(
-			`/api/projects?page=${page}&per_page=${perPage}`,
+			`/projects?page=${page}&per_page=${perPage}`,
 			{ method: 'GET' }
 		);
 	},
@@ -41,7 +41,7 @@ export const projectsApi = {
 	 * Get project detail with counts
 	 */
 	get: async (id: string): Promise<ProjectDetail> => {
-		return fetchApi<ProjectDetail>(`/api/projects/${id}`, {
+		return fetchApi<ProjectDetail>(`/projects/${id}`, {
 			method: 'GET',
 		});
 	},
@@ -60,7 +60,7 @@ export const projectsApi = {
 	 * Update a project
 	 */
 	update: async (id: string, data: ProjectUpdate): Promise<Project> => {
-		return fetchApi<Project>(`/api/projects/${id}`, {
+		return fetchApi<Project>(`/projects/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
@@ -70,7 +70,7 @@ export const projectsApi = {
 	 * Delete a project
 	 */
 	delete: async (id: string): Promise<void> => {
-		return fetchApi<void>(`/api/projects/${id}`, {
+		return fetchApi<void>(`/projects/${id}`, {
 			method: 'DELETE',
 		});
 	},
@@ -79,7 +79,7 @@ export const projectsApi = {
 	 * Assign documents to a project
 	 */
 	assignDocuments: async (id: string, documentIds: string[]): Promise<void> => {
-		return fetchApi<void>(`/api/projects/${id}/documents`, {
+		return fetchApi<void>(`/projects/${id}/documents`, {
 			method: 'POST',
 			body: JSON.stringify({ document_ids: documentIds }),
 		});
@@ -89,7 +89,7 @@ export const projectsApi = {
 	 * Remove documents from a project
 	 */
 	removeDocuments: async (id: string, documentIds: string[]): Promise<void> => {
-		return fetchApi<void>(`/api/projects/${id}/documents`, {
+		return fetchApi<void>(`/projects/${id}/documents`, {
 			method: 'DELETE',
 			body: JSON.stringify({ document_ids: documentIds }),
 		});
@@ -99,7 +99,7 @@ export const projectsApi = {
 	 * Get documents in a project
 	 */
 	getDocuments: async (id: string): Promise<Document[]> => {
-		return fetchApi<Document[]>(`/api/projects/${id}/documents`, {
+		return fetchApi<Document[]>(`/projects/${id}/documents`, {
 			method: 'GET',
 		});
 	},

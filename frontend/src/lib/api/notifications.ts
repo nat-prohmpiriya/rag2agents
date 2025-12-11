@@ -114,7 +114,7 @@ export async function getNotifications(
 	if (params.unread_only) searchParams.set('unread_only', 'true');
 
 	const query = searchParams.toString();
-	const url = query ? `/api/notifications?${query}` : '/notifications';
+	const url = query ? `/notifications?${query}` : '/notifications';
 
 	return fetchApi<NotificationListResponse>(url);
 }
@@ -130,7 +130,7 @@ export async function getUnreadCount(): Promise<UnreadCountResponse> {
  * Mark a single notification as read
  */
 export async function markAsRead(notificationId: string): Promise<MarkAsReadResponse> {
-	return fetchApi<MarkAsReadResponse>(`/api/notifications/${notificationId}/read`, {
+	return fetchApi<MarkAsReadResponse>(`/notifications/${notificationId}/read`, {
 		method: 'POST'
 	});
 }
@@ -150,7 +150,7 @@ export async function markAllAsRead(): Promise<MarkAllAsReadResponse> {
 export async function deleteNotification(
 	notificationId: string
 ): Promise<{ success: boolean; message: string }> {
-	return fetchApi<{ success: boolean; message: string }>(`/api/notifications/${notificationId}`, {
+	return fetchApi<{ success: boolean; message: string }>(`/notifications/${notificationId}`, {
 		method: 'DELETE'
 	});
 }

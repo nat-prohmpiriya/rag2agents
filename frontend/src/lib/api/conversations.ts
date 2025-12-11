@@ -63,7 +63,7 @@ export const conversationsApi = {
 	 */
 	list: async (page: number = 1, perPage: number = 20): Promise<PaginatedResponse<Conversation>> => {
 		return fetchApi<PaginatedResponse<Conversation>>(
-			`/api/conversations?page=${page}&per_page=${perPage}`,
+			`/conversations?page=${page}&per_page=${perPage}`,
 			{ method: 'GET' }
 		);
 	},
@@ -82,7 +82,7 @@ export const conversationsApi = {
 	 * Get conversation detail with messages
 	 */
 	get: async (id: string): Promise<ConversationDetail> => {
-		return fetchApi<ConversationDetail>(`/api/conversations/${id}`, {
+		return fetchApi<ConversationDetail>(`/conversations/${id}`, {
 			method: 'GET',
 		});
 	},
@@ -91,7 +91,7 @@ export const conversationsApi = {
 	 * Update conversation title
 	 */
 	update: async (id: string, title: string): Promise<Conversation> => {
-		return fetchApi<Conversation>(`/api/conversations/${id}`, {
+		return fetchApi<Conversation>(`/conversations/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify({ title }),
 		});
@@ -101,7 +101,7 @@ export const conversationsApi = {
 	 * Delete a conversation
 	 */
 	delete: async (id: string): Promise<void> => {
-		return fetchApi<void>(`/api/conversations/${id}`, {
+		return fetchApi<void>(`/conversations/${id}`, {
 			method: 'DELETE',
 		});
 	},
@@ -115,7 +115,7 @@ export const conversationsApi = {
 			q: query,
 			limit: limit.toString(),
 		});
-		return fetchApi<ConversationSearchResponse>(`/api/conversations/search?${params}`, {
+		return fetchApi<ConversationSearchResponse>(`/conversations/search?${params}`, {
 			method: 'GET',
 		});
 	},

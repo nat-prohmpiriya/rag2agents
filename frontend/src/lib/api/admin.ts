@@ -143,11 +143,11 @@ export async function getPlans(
 		per_page: String(perPage),
 		include_inactive: String(includeInactive)
 	});
-	return fetchApi<PlanListResponse>(`/api/admin/plans?${params}`);
+	return fetchApi<PlanListResponse>(`/admin/plans?${params}`);
 }
 
 export async function getPlan(id: string): Promise<Plan> {
-	return fetchApi<Plan>(`/api/admin/plans/${id}`);
+	return fetchApi<Plan>(`/admin/plans/${id}`);
 }
 
 export async function createPlan(data: Partial<Plan>): Promise<Plan> {
@@ -158,14 +158,14 @@ export async function createPlan(data: Partial<Plan>): Promise<Plan> {
 }
 
 export async function updatePlan(id: string, data: Partial<Plan>): Promise<Plan> {
-	return fetchApi<Plan>(`/api/admin/plans/${id}`, {
+	return fetchApi<Plan>(`/admin/plans/${id}`, {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function deletePlan(id: string): Promise<void> {
-	await fetchApi<{ message: string }>(`/api/admin/plans/${id}`, {
+	await fetchApi<{ message: string }>(`/admin/plans/${id}`, {
 		method: 'DELETE'
 	});
 }
@@ -184,11 +184,11 @@ export async function getSubscriptions(
 	if (filters?.plan_id) params.set('plan_id', filters.plan_id);
 	if (filters?.user_id) params.set('user_id', filters.user_id);
 
-	return fetchApi<SubscriptionListResponse>(`/api/admin/subscriptions?${params}`);
+	return fetchApi<SubscriptionListResponse>(`/admin/subscriptions?${params}`);
 }
 
 export async function getSubscription(id: string): Promise<Subscription> {
-	return fetchApi<Subscription>(`/api/admin/subscriptions/${id}`);
+	return fetchApi<Subscription>(`/admin/subscriptions/${id}`);
 }
 
 export async function upgradeSubscription(
@@ -196,7 +196,7 @@ export async function upgradeSubscription(
 	newPlanId: string,
 	billingInterval?: 'monthly' | 'yearly'
 ): Promise<Subscription> {
-	return fetchApi<Subscription>(`/api/admin/subscriptions/${id}/upgrade`, {
+	return fetchApi<Subscription>(`/admin/subscriptions/${id}/upgrade`, {
 		method: 'POST',
 		body: JSON.stringify({
 			new_plan_id: newPlanId,
@@ -210,7 +210,7 @@ export async function downgradeSubscription(
 	newPlanId: string,
 	effectiveAtPeriodEnd = true
 ): Promise<Subscription> {
-	return fetchApi<Subscription>(`/api/admin/subscriptions/${id}/downgrade`, {
+	return fetchApi<Subscription>(`/admin/subscriptions/${id}/downgrade`, {
 		method: 'POST',
 		body: JSON.stringify({
 			new_plan_id: newPlanId,
@@ -224,7 +224,7 @@ export async function cancelSubscription(
 	cancelReason?: string,
 	cancelAtPeriodEnd = true
 ): Promise<Subscription> {
-	return fetchApi<Subscription>(`/api/admin/subscriptions/${id}/cancel`, {
+	return fetchApi<Subscription>(`/admin/subscriptions/${id}/cancel`, {
 		method: 'POST',
 		body: JSON.stringify({
 			cancel_reason: cancelReason,
@@ -234,7 +234,7 @@ export async function cancelSubscription(
 }
 
 export async function reactivateSubscription(id: string): Promise<Subscription> {
-	return fetchApi<Subscription>(`/api/admin/subscriptions/${id}/reactivate`, {
+	return fetchApi<Subscription>(`/admin/subscriptions/${id}/reactivate`, {
 		method: 'POST'
 	});
 }
@@ -296,11 +296,11 @@ export async function getUsers(
 	if (filters?.plan) params.set('plan', filters.plan);
 	if (filters?.status) params.set('status', filters.status);
 
-	return fetchApi<AdminUserListResponse>(`/api/admin/users?${params}`);
+	return fetchApi<AdminUserListResponse>(`/admin/users?${params}`);
 }
 
 export async function getUser(id: string): Promise<AdminUser> {
-	return fetchApi<AdminUser>(`/api/admin/users/${id}`);
+	return fetchApi<AdminUser>(`/admin/users/${id}`);
 }
 
 export async function updateUser(
@@ -313,41 +313,41 @@ export async function updateUser(
 		tier?: string;
 	}
 ): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}`, {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
 }
 
 export async function changeUserPlan(id: string, planId: string): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}/change-plan`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}/change-plan`, {
 		method: 'POST',
 		body: JSON.stringify({ plan_id: planId })
 	});
 }
 
 export async function suspendUser(id: string, reason?: string): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}/suspend`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}/suspend`, {
 		method: 'POST',
 		body: JSON.stringify({ reason })
 	});
 }
 
 export async function activateUser(id: string): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}/activate`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}/activate`, {
 		method: 'POST'
 	});
 }
 
 export async function banUser(id: string, reason?: string): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}/ban`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}/ban`, {
 		method: 'POST',
 		body: JSON.stringify({ reason })
 	});
 }
 
 export async function deleteUser(id: string): Promise<{ message: string }> {
-	return fetchApi<{ message: string }>(`/api/admin/users/${id}`, {
+	return fetchApi<{ message: string }>(`/admin/users/${id}`, {
 		method: 'DELETE'
 	});
 }
@@ -454,7 +454,7 @@ export interface UserDetail {
 }
 
 export async function getUserDetail(id: string): Promise<UserDetail> {
-	return fetchApi<UserDetail>(`/api/admin/users/${id}/detail`);
+	return fetchApi<UserDetail>(`/admin/users/${id}/detail`);
 }
 
 // Usage Analytics Types
@@ -513,7 +513,7 @@ export interface UsageAnalytics {
 }
 
 export async function getUsageAnalytics(days: number = 30): Promise<UsageAnalytics> {
-	return fetchApi<UsageAnalytics>(`/api/admin/usage?days=${days}`);
+	return fetchApi<UsageAnalytics>(`/admin/usage?days=${days}`);
 }
 
 // System Health Types
@@ -637,11 +637,11 @@ export async function getAuditLogs(
 	if (filters?.end_date) params.set('end_date', filters.end_date);
 	if (filters?.search) params.set('search', filters.search);
 
-	return fetchApi<AuditLogListResponse>(`/api/admin/audit?${params}`);
+	return fetchApi<AuditLogListResponse>(`/admin/audit?${params}`);
 }
 
 export async function getAuditLog(id: string): Promise<AuditLog> {
-	return fetchApi<AuditLog>(`/api/admin/audit/${id}`);
+	return fetchApi<AuditLog>(`/admin/audit/${id}`);
 }
 
 export async function getAuditActionTypes(): Promise<AuditActionType[]> {
@@ -786,14 +786,14 @@ export async function initializeSettings(): Promise<{ message: string }> {
 
 export async function getRawSettings(category?: string): Promise<SettingRaw[]> {
 	const params = category ? `?category=${category}` : '';
-	return fetchApi<SettingRaw[]>(`/api/admin/settings/raw${params}`);
+	return fetchApi<SettingRaw[]>(`/admin/settings/raw${params}`);
 }
 
 export async function updateRawSetting(
 	key: string,
 	data: { value?: string; value_json?: Record<string, unknown>; description?: string }
 ): Promise<SettingRaw> {
-	return fetchApi<SettingRaw>(`/api/admin/settings/raw/${key}`, {
+	return fetchApi<SettingRaw>(`/admin/settings/raw/${key}`, {
 		method: 'PUT',
 		body: JSON.stringify(data)
 	});
