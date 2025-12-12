@@ -229,5 +229,84 @@ export const workflowsApi = {
 		return fetchApi<WorkflowExecutionInfo>(`/workflows/executions/${executionId}/cancel`, {
 			method: 'POST'
 		});
+	},
+
+	/**
+	 * Chat with a workflow using streaming SSE
+	 */
+	chatStream: async (
+		workflowId: string,
+		message: string,
+		onChunk: (content: string) => void,
+		onNodeEvent?: (event: { node_id: string; node_type: string; status: string }) => void,
+		onDone?: (data: { outputs?: Record<string, unknown>; total_tokens?: number }) => void,
+		onError?: (error: string) => void,
+		abortSignal?: AbortSignal
+	): Promise<void> => {
+		const token = localStorage.getItem('token');
+		const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+		const response = await fetch(`${baseUrl}/api/v1/workflows/${workflowId}/chat`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({ message }),
+			signal: abortSignal
+		});
+
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(error || 'Failed to start workflow chat');
+		}
+
+		const reader = response.body?.getReader();
+		if (!reader) {
+			throw new Error('No response body');
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || '';
+
+			for (const line of lines) {
+				if (line.startsWith('data: ')) {
+					try {
+						const data = JSON.parse(line.slice(6));
+
+						if (data.error) {
+							onError?.(data.error);
+							return;
+						}
+
+						if (data.content && !data.done) {
+							onChunk(data.content);
+						}
+
+						if (data.node_id && data.status) {
+							onNodeEvent?.(data);
+						}
+
+						if (data.done) {
+							onDone?.({
+								outputs: data.outputs,
+								total_tokens: data.total_tokens
+							});
+							return;
+						}
+					} catch {
+						// Ignore parse errors for incomplete chunks
+					}
+				}
+			}
+		}
 	}
 };

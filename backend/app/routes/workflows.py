@@ -1,8 +1,12 @@
 """Workflow API routes."""
 
+import json
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
@@ -20,7 +24,20 @@ from app.schemas.workflow import (
 )
 from app.services import workflow as workflow_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/workflows", tags=["workflows"])
+
+
+# =============================================================================
+# Workflow Chat Schema
+# =============================================================================
+
+
+class WorkflowChatRequest(BaseModel):
+    """Request schema for workflow chat."""
+
+    message: str
+    conversation_id: str | None = None
 
 
 # =============================================================================
@@ -235,4 +252,57 @@ async def cancel_workflow_execution(
     return BaseResponse(
         trace_id=ctx.trace_id,
         data=WorkflowExecutionInfo.model_validate(execution),
+    )
+
+
+# =============================================================================
+# Workflow Chat (Interactive)
+# =============================================================================
+
+
+@router.post("/{workflow_id}/chat")
+async def workflow_chat_stream(
+    workflow_id: uuid.UUID,
+    data: WorkflowChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Chat with a workflow using streaming SSE.
+
+    Executes the workflow with the user message as input and streams
+    the LLM output in real-time.
+    """
+    ctx = get_context()
+    ctx.user_id = current_user.id
+
+    # Get workflow
+    workflow = await workflow_service.get_workflow(db, workflow_id, current_user.id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    async def event_generator():
+        try:
+            # Execute workflow with streaming
+            async for event in workflow_service.execute_workflow_stream(
+                db=db,
+                workflow_id=workflow_id,
+                user_id=current_user.id,
+                inputs={"query": data.message, "message": data.message},
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Workflow chat error: {e}")
+            error_data = json.dumps({"error": str(e), "done": True})
+            yield f"data: {error_data}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "X-Trace-Id": ctx.trace_id,
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
     )

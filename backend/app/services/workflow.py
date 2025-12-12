@@ -411,3 +411,79 @@ async def cancel_execution(
 
     logger.info(f"Cancelled execution {execution_id}")
     return execution
+
+
+# =============================================================================
+# Workflow Streaming Execution
+# =============================================================================
+
+
+async def execute_workflow_stream(
+    db: AsyncSession,
+    workflow_id: uuid.UUID,
+    user_id: uuid.UUID,
+    inputs: dict,
+):
+    """
+    Execute a workflow with streaming output.
+
+    Yields SSE events as the workflow executes, streaming LLM responses
+    in real-time.
+
+    Args:
+        db: Database session
+        workflow_id: Workflow ID to execute
+        user_id: User ID
+        inputs: Execution inputs
+
+    Yields:
+        Dict events with content, node info, and done status
+    """
+    from app.services.workflow_engine import WorkflowEngineStream
+
+    # Get workflow
+    workflow = await get_workflow(db, workflow_id, user_id)
+    if not workflow:
+        yield {"error": "Workflow not found", "done": True}
+        return
+
+    # Create execution record
+    execution = WorkflowExecution(
+        workflow_id=workflow_id,
+        user_id=user_id,
+        status=ExecutionStatus.pending.value,
+        inputs=inputs,
+        outputs={},
+        node_states={},
+        logs=[],
+        started_at=datetime.now(UTC).isoformat(),
+    )
+    db.add(execution)
+    await db.flush()
+    await db.refresh(execution)
+
+    # Execute with streaming
+    engine = WorkflowEngineStream(workflow, execution, db)
+    try:
+        execution.status = ExecutionStatus.running.value
+        await db.flush()
+
+        async for event in engine.execute_stream(inputs):
+            yield event
+
+        # Update execution after completion
+        execution.status = ExecutionStatus.completed.value
+        execution.outputs = engine.state.get("node_outputs", {})
+        execution.node_states = engine.state.get("node_outputs", {})
+        execution.logs = engine.logs
+        execution.total_tokens = engine.total_tokens
+        execution.completed_at = datetime.now(UTC).isoformat()
+
+    except Exception as e:
+        logger.error(f"Workflow streaming execution failed: {e}")
+        execution.status = ExecutionStatus.failed.value
+        execution.error_message = str(e)
+        execution.completed_at = datetime.now(UTC).isoformat()
+        yield {"error": str(e), "done": True}
+
+    await db.flush()

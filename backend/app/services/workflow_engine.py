@@ -477,6 +477,81 @@ NODE_EXECUTORS: dict[str, type[BaseNodeExecutor]] = {
 # =============================================================================
 
 
+class LLMNodeExecutorStream(BaseNodeExecutor):
+    """LLM node with streaming support."""
+
+    node_type = "llm"
+
+    async def execute(
+        self,
+        node_config: dict,
+        state: dict,
+        db: AsyncSession,
+    ) -> dict:
+        """Non-streaming execute (required by base class)."""
+        # Use non-streaming executor
+        executor = LLMNodeExecutor()
+        return await executor.execute(node_config, state, db)
+
+    async def execute_stream(
+        self,
+        node_config: dict,
+        state: dict,
+        db: AsyncSession,
+    ):
+        """Execute LLM call with streaming."""
+        config = node_config.get("config", {})
+
+        # Get prompt template and render with state
+        prompt_template = config.get("prompt", "")
+        prompt = self._render_template(prompt_template, state)
+
+        # Get model settings
+        model = config.get("model", "gemini-2.0-flash")
+        temperature = config.get("temperature", 0.7)
+        max_tokens = config.get("max_tokens")
+        system_prompt = config.get("system_prompt")
+
+        # Build messages
+        messages = []
+        if system_prompt:
+            messages.append(ChatMessage(role="system", content=system_prompt))
+        messages.append(ChatMessage(role="user", content=prompt))
+
+        # Stream LLM response
+        full_response = ""
+        async for chunk in llm_client.chat_completion_stream(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ):
+            full_response += chunk
+            yield {"content": chunk, "done": False}
+
+        yield {
+            "output": full_response,
+            "done": True,
+        }
+
+    def _render_template(self, template: str, state: dict) -> str:
+        """Render template with state variables."""
+        result = template
+        node_outputs = state.get("node_outputs", {})
+        inputs = state.get("inputs", {})
+
+        for key, value in inputs.items():
+            result = result.replace(f"{{{{{key}}}}}", str(value))
+
+        for node_id, output in node_outputs.items():
+            if isinstance(output, dict) and "output" in output:
+                result = result.replace(f"{{{{nodes.{node_id}}}}}", str(output["output"]))
+            else:
+                result = result.replace(f"{{{{nodes.{node_id}}}}}", str(output))
+
+        return result
+
+
 class WorkflowEngine:
     """Workflow execution engine."""
 
@@ -678,3 +753,101 @@ class WorkflowEngine:
                             return node
 
         return None
+
+
+class WorkflowEngineStream(WorkflowEngine):
+    """Workflow execution engine with streaming support."""
+
+    async def execute_stream(self, inputs: dict):
+        """
+        Execute the workflow with streaming output.
+
+        Args:
+            inputs: Workflow inputs
+
+        Yields:
+            Dict events with content, node info, and done status
+        """
+        self.state["inputs"] = inputs
+        nodes = self.workflow.nodes or []
+        edges = self.workflow.edges or []
+
+        if not nodes:
+            yield {"content": "", "done": True, "outputs": {}}
+            return
+
+        # Build adjacency map for traversal
+        adjacency = self._build_adjacency(edges)
+
+        # Find start node
+        start_node = self._find_start_node(nodes)
+        if not start_node:
+            yield {"error": "No start node found in workflow", "done": True}
+            return
+
+        # Execute nodes in order
+        current_node = start_node
+        visited = set()
+
+        while current_node:
+            node_id = current_node.get("id")
+            node_data = current_node.get("data", {})
+            node_type = node_data.get("type", "")
+
+            if node_id in visited and node_type != "loop":
+                break
+
+            visited.add(node_id)
+
+            # Yield node start event
+            yield {
+                "node_id": node_id,
+                "node_type": node_type,
+                "status": "running",
+                "done": False,
+            }
+
+            # Execute node (with streaming for LLM nodes)
+            if node_type == "llm":
+                result = await self._execute_llm_node_stream(current_node)
+                async for event in result:
+                    if "content" in event:
+                        yield event
+                    if "output" in event:
+                        self.state["node_outputs"][node_id] = {"output": event["output"]}
+            else:
+                result = await self._execute_node(current_node)
+                self.state["node_outputs"][node_id] = result
+
+            # Get next node
+            if node_type == "end":
+                break
+            elif node_type == "condition":
+                result = self.state["node_outputs"].get(node_id, {})
+                branch = result.get("branch", "true")
+                next_node = self._get_next_node_for_branch(node_id, branch, edges, nodes)
+            else:
+                next_node = self._get_next_node(node_id, adjacency, nodes)
+
+            current_node = next_node
+
+        # Final done event
+        yield {
+            "done": True,
+            "outputs": self.state["node_outputs"],
+            "total_tokens": self.total_tokens,
+        }
+
+    async def _execute_llm_node_stream(self, node: dict):
+        """Execute LLM node with streaming."""
+        node_id = node.get("id", "")
+        node_data = node.get("data", {})
+        node_config = node_data.get("config", {})
+
+        executor = LLMNodeExecutorStream()
+        async for event in executor.execute_stream(
+            {"id": node_id, "config": node_config},
+            self.state,
+            self.db,
+        ):
+            yield event

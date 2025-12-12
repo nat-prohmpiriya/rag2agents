@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-svelte';
+	import { MessageCircle, X, Send, Bot, User, Loader2, Play } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { chatApi, type ModelInfo, type SourceInfo, type UsageInfo, type LatencyInfo } from '$lib/api/chat';
+	import { workflowsApi } from '$lib/api/workflows';
 	import { Marked } from 'marked';
 	import { markedHighlight } from 'marked-highlight';
 	import hljs from 'highlight.js';
@@ -22,9 +22,11 @@
 			role: 'user' | 'assistant';
 			content: string;
 			isStreaming?: boolean;
+			nodeInfo?: string;
 		}[]
 	>([]);
 	let isLoading = $state(false);
+	let currentNode = $state<string | null>(null);
 	let textareaRef: HTMLTextAreaElement;
 	let messagesContainerRef: HTMLDivElement;
 	let abortController: AbortController | null = null;
@@ -53,7 +55,7 @@
 			messages = [
 				{
 					role: 'assistant',
-					content: `Hello! I'm here to help you with your workflow "${workflowName}". You can ask me questions about your workflow, get suggestions for improvements, or discuss how to add new nodes.`
+					content: `สวัสดี! คุณสามารถพิมพ์ข้อความเพื่อทดสอบ workflow "${workflowName}" ได้เลย ข้อความของคุณจะถูกส่งเข้า workflow และคุณจะเห็นผลลัพธ์แบบ real-time`
 				}
 			];
 		}
@@ -80,37 +82,42 @@
 		// Add placeholder for assistant response
 		messages = [...messages, { role: 'assistant', content: '', isStreaming: true }];
 		isLoading = true;
+		currentNode = null;
 
 		abortController = new AbortController();
 
 		try {
-			await chatApi.stream(
-				{
-					message: `[Context: User is working on a workflow named "${workflowName}" with ID ${workflowId}]\n\n${userMessage}`,
-					stream: true
-				},
+			await workflowsApi.chatStream(
+				workflowId,
+				userMessage,
+				// onChunk
 				(content) => {
-					// Update the last message with streamed content
 					messages = messages.map((m, i) =>
 						i === messages.length - 1 ? { ...m, content: m.content + content } : m
 					);
 					scrollToBottom();
 				},
+				// onNodeEvent
+				(event) => {
+					currentNode = `${event.node_type}: ${event.status}`;
+				},
+				// onDone
 				() => {
-					// Done streaming
 					messages = messages.map((m, i) =>
 						i === messages.length - 1 ? { ...m, isStreaming: false } : m
 					);
 					isLoading = false;
+					currentNode = null;
 				},
+				// onError
 				(error) => {
-					// Error occurred
 					messages = messages.map((m, i) =>
 						i === messages.length - 1
 							? { ...m, content: `Error: ${error}`, isStreaming: false }
 							: m
 					);
 					isLoading = false;
+					currentNode = null;
 				},
 				abortController.signal
 			);
@@ -123,6 +130,7 @@
 				);
 			}
 			isLoading = false;
+			currentNode = null;
 		}
 	}
 
@@ -172,11 +180,15 @@
 		<!-- Header -->
 		<div class="flex items-center gap-3 border-b border-border px-4 py-3">
 			<div class="flex size-9 items-center justify-center rounded-full bg-primary/10">
-				<Bot class="size-5 text-primary" />
+				<Play class="size-5 text-primary" />
 			</div>
 			<div class="flex-1">
-				<h3 class="font-semibold text-foreground">Workflow Assistant</h3>
-				<p class="text-xs text-muted-foreground">Ask about your workflow</p>
+				<h3 class="font-semibold text-foreground">Test Workflow</h3>
+				{#if currentNode}
+					<p class="text-xs text-primary animate-pulse">{currentNode}</p>
+				{:else}
+					<p class="text-xs text-muted-foreground">Chat with your workflow</p>
+				{/if}
 			</div>
 			<Button variant="ghost" size="icon" class="size-8" onclick={toggleChat}>
 				<X class="size-4" />
@@ -235,7 +247,7 @@
 				<textarea
 					bind:this={textareaRef}
 					bind:value={message}
-					placeholder="Ask about your workflow..."
+					placeholder="Type a message to test workflow..."
 					rows="1"
 					class="max-h-[120px] min-h-[40px] flex-1 resize-none rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 					onkeydown={handleKeydown}
