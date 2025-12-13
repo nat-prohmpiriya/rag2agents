@@ -5,11 +5,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.core.context import get_context
 from app.core.database import instrument_database_engine
 from app.core.exceptions import AppException
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.core.telemetry import (
     instrument_app,
     instrument_redis,
@@ -66,6 +68,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Rate limiter state
+app.state.limiter = limiter
+
 # Instrument with OpenTelemetry (must be before other middleware)
 instrument_app(app)
 
@@ -97,6 +102,10 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
             detail=exc.message,
         ).model_dump(),
     )
+
+
+# Rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 # Routers

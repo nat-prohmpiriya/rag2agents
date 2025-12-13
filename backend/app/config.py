@@ -16,18 +16,28 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = True
 
-    # Database
-    database_url: str = "postgresql+asyncpg://llmproxy:dbpassword9090@localhost:5433/rag_agent"
+    # Database - REQUIRED: No default, must be set via environment
+    database_url: str
 
     # LiteLLM
     litellm_api_url: str = "http://localhost:4000"
     litellm_api_key: str = ""
 
-    # JWT
-    jwt_secret_key: str = "your-secret-key-min-32-chars-change-in-production"
+    # JWT - REQUIRED: No default, must be set via environment
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        """Validate JWT secret key is secure."""
+        if len(v) < 32:
+            raise ValueError("JWT_SECRET_KEY must be at least 32 characters")
+        if v == "your-secret-key-min-32-chars-change-in-production":
+            raise ValueError("JWT_SECRET_KEY must be changed from the example value")
+        return v
 
     # CORS
     cors_origins: str | list[str] = "http://localhost:5173,http://localhost:3000"

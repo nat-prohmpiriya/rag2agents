@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
 from app.core.dependencies import get_current_user, get_db
+from app.core.rate_limit import RateLimits, limiter
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RefreshTokenRequest, TokenResponse
 from app.schemas.base import BaseResponse, MessageResponse
@@ -13,7 +14,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", status_code=201)
+@limiter.limit(RateLimits.AUTH_REGISTER)
 async def register(
+    request: Request,
     data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[UserResponse]:
@@ -27,7 +30,9 @@ async def register(
 
 
 @router.post("/login")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 async def login(
+    request: Request,
     data: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[TokenResponse]:
@@ -42,7 +47,9 @@ async def login(
 
 
 @router.post("/refresh")
+@limiter.limit(RateLimits.AUTH_REFRESH)
 async def refresh_token(
+    request: Request,
     data: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[TokenResponse]:
