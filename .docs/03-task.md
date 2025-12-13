@@ -1,604 +1,577 @@
-# RAG Agent Platform - Development Todos
+# Development Tasks: RAG Agent Platform
 
-## Document Info
+## Overview
 
-| | |
-|--|--|
-| **Version** | 2.0 |
-| **Date** | December 2024 |
-| **Status** | In Progress |
-| **Spec Version** | v4 (synced) |
+Tasks แบ่งตาม Phase โดยเรียงลำดับตาม Dependency Order
+- `[x]` = Completed
+- `[ ]` = Pending
+- `[~]` = In Progress
 
 ---
 
-## Current Progress Overview
+## PHASE 1: Foundation & Authentication
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| LiteLLM Proxy | ✅ Done | Running on port 4000, UI available |
-| Frontend (SvelteKit) | ✅ Done | Svelte 5 + Tailwind v4 + shadcn-svelte (Phase 1 Complete) |
-| Backend (FastAPI) | ✅ Done | Auth + Chat + RAG API (Phase 2 Complete) |
-| PostgreSQL + pgvector | ✅ Done | Running in docker with vector support |
-| Redis | ✅ Done | Running for LiteLLM cache |
-| Vector Store | ✅ Done | pgvector (replaced ChromaDB) |
-| Auth System | ✅ Done | JWT + refresh token |
-| User Profile & Settings | 🔄 In Progress | Profile fields exist, API/UI pending |
-| Chat System | ✅ Done | Streaming, History, Settings, Markdown |
-| Conversation API | ✅ Done | CRUD + Messages |
-| RAG Pipeline | ✅ Done | Document upload, chunking, embedding, retrieval |
-| Project System | ✅ Done | CRUD, Document Assignment, RAG Filtering |
-| PII Protection | ❌ Not Started | Presidio integration |
-| Agent System | 🔄 In Progress | Backend done, UI done, User agents pending |
-| Text-to-SQL | ❌ Not Started | Schema Linking + User Confirm |
-| Fine-tuning | ❌ Not Started | Job Dispatcher pattern |
+### 1.1 Backend Core Setup
+
+#### BE-001: Add UserTier enum
+- [x] User model มีอยู่แล้ว
+- [ ] เปลี่ยน `tier` จาก string เป็น Enum
+
+**Description:** เพิ่ม UserTier enum (FREE, STARTER, PRO, ENTERPRISE) และใช้ใน User model
+**Files:** `backend/app/models/user.py`
+**Reference:** ดู pattern จาก `MessageRole` enum ใน `backend/app/models/message.py`
+**Done when:** Migration run สำเร็จ, enum ใช้งานได้
 
 ---
 
-## Phase 1: Foundation (Infrastructure & Basic App)
-
-### 1.1 Infrastructure Setup
-- [x] Setup LiteLLM Docker Compose
-- [x] Create LiteLLM config (Gemini + Groq models)
-- [x] Generate environment variables script
-- [x] Test LiteLLM proxy connection
-- [x] Setup PostgreSQL in docker-compose
-- [x] Setup Redis (for LiteLLM cache)
-- [x] Verify all containers run together
-- [x] Setup LiteLLM UI credentials
-
-### 1.2 Backend Setup (FastAPI)
-- [x] Initialize FastAPI project structure
-- [x] Setup project dependencies (pyproject.toml with uv)
-- [x] Create main.py entrypoint
-- [x] Setup CORS middleware
-- [x] Create health check endpoint
-- [x] Setup database connection (SQLAlchemy async + PostgreSQL)
-- [x] Create Alembic migrations setup
-- [x] Create base database models (User, Project, Conversation)
-- [x] Setup environment configuration (pydantic-settings)
-
-### 1.3 Authentication System
-- [x] Create User model & schema
-- [x] Implement password hashing (bcrypt)
-- [x] Create JWT token utilities
-- [x] Implement register endpoint
-- [x] Implement login endpoint
-- [x] Implement logout endpoint
-- [x] Create auth middleware
-- [x] Implement /me endpoint (get current user)
-- [x] Add refresh token support
-
-### 1.4 Frontend Setup (SvelteKit)
-- [x] Initialize SvelteKit project
-- [x] Setup Tailwind CSS v4
-- [x] Setup i18n (Paraglide)
-- [x] Initialize shadcn-svelte
-- [x] Add base UI components (Button, Card, Input, Dialog)
-- [x] Create base layout component
-- [x] Create navigation/header component
-- [x] Create sidebar component
-- [x] Setup API client (fetch wrapper)
-- [x] Create auth store (Svelte stores with runes)
-- [x] Implement login page
-- [x] Implement register page
-- [x] Add protected route logic
-
-### 1.5 Basic Chat Integration
-- [x] Create LiteLLM client wrapper in backend
-- [x] Implement /chat endpoint (non-streaming)
-- [x] Implement /chat/stream endpoint (SSE streaming)
-- [x] Create ChatWindow component
-- [x] Implement message input component
-- [x] Implement message display (markdown support)
-- [x] Add code syntax highlighting
-- [x] Connect frontend to backend chat API
-- [x] Test end-to-end chat flow
-
-### 1.6 Chat Settings UI (Frontend)
-- [x] Create ChatSettings component
-- [x] Add model selector dropdown (6 models: Gemini + Groq)
-- [x] Add temperature slider (0.0 - 2.0)
-- [x] Add max tokens input (optional, 100-4096)
-- [x] Integrate settings with chat API request
-- [x] Test model switching and parameter changes
-
-### 1.7 Chat History & Sidebar (Frontend)
-- [x] Create conversations API client
-- [x] Create ChatHistorySidebar component (grouped by date)
-- [x] Create ChatLayout wrapper component
-- [x] Add /chat route (new chat)
-- [x] Add /chat/[id] route (chat detail)
-- [x] Implement collapsible main sidebar with tooltips
-- [x] Add sidebar state persistence (localStorage)
-- [x] Implement streaming performance optimization (throttled scroll)
-- [x] Add markdown rendering for assistant messages
-
-### 1.8 Chat Enhancements (Backlog)
-- [x] Auto-generate conversation title from first message
-- [x] Add code syntax highlighting (Prism.js/Shiki)
-- [ ] Add system prompt per conversation (instruction/personality)
-- [x] Show message timestamps in UI
-- [x] Add message copy button
-- [x] Add regenerate response button
-
-### 1.10 Conversation Search ✅ DONE
-> Full-text search พร้อม highlight แบบ Gemini/Claude
-> ใช้ **PostgreSQL tsvector + GIN Index** - ไม่ต้องติดตั้ง Elasticsearch/Algolia
-
-**Backend (PostgreSQL Full-text Search):**
-- [x] Add `search_vector` tsvector column to messages table
-- [x] Create GIN index for full-text search (`CREATE INDEX ... USING GIN`)
-- [x] Create Alembic migration for search_vector + index
-- [x] Add trigger to auto-update search_vector on INSERT/UPDATE
-- [x] Create search endpoint `GET /api/conversations/search?q=keyword`
-- [x] Implement `ts_rank` for relevance ranking
-- [x] Implement `ts_headline` for snippet with `<mark>` highlight
-- [x] Return: conversation_id, title, snippet (highlighted), match_count, rank
-- [x] Filter by user_id (security)
-
-**Frontend (Search UI):**
-- [x] Add search input to ChatHistorySidebar (with Search icon)
-- [x] Implement debounced search (300ms)
-- [x] Create SearchResults component (integrated in sidebar)
-- [x] Display: title, highlighted snippet, match count
-- [x] Click to navigate to conversation
-- [x] Render `<mark>` highlight from backend response
-- [x] Add "Clear search" button (X icon)
-- [x] Show "No results" state
-- [x] Show loading state while searching
-
-**โม้ได้:**
-- ค้นหาล้าน records ใน **milliseconds** (GIN Index)
-- รองรับ **stemming** (running/runs/ran → หาเจอหมด)
-- **Relevance ranking** (เรียงตาม score)
-- **Auto highlight** snippet
-- **ไม่ต้องจ่าย** Elasticsearch/Algolia
-
-### 1.9 User Profile & Settings ⭐ NEW
-- [x] User profile fields exist (first_name, last_name)
-- [ ] Create users route file (routes/users.py)
-- [ ] Add profile update API endpoint (PUT /api/users/me)
-- [ ] Add avatar upload endpoint (POST /api/users/me/avatar)
-- [ ] Create UserSettings model (user_settings.py)
-- [ ] Add settings CRUD API endpoints
-- [ ] Create settings page UI (frontend)
-- [ ] Add theme switcher (light/dark/system)
-- [ ] Add language selector
-- [ ] Add default model preference
-
-**Phase 1 Deliverable**: User can register, login, and chat with AI
+#### BE-002 - BE-009: Auth Backend
+- [x] Password hashing: `backend/app/core/security.py`
+- [x] JWT tokens: `backend/app/core/security.py`
+- [x] Auth schemas: `backend/app/schemas/auth.py`
+- [x] Auth service: `backend/app/services/auth.py`
+- [x] Auth dependency: `backend/app/core/dependencies.py`
+- [x] Auth routes: `backend/app/routes/auth.py`
+- [x] Profile routes: `backend/app/routes/profile.py`
 
 ---
 
-## Phase 2: RAG Core (Document & Retrieval)
+### 1.2 Frontend Auth
 
-### 2.1 Document Processing
-- [x] Setup pgvector in PostgreSQL (replaced ChromaDB)
-- [x] Create document upload endpoint
-- [x] Implement file validation (PDF, DOCX, TXT, MD, CSV)
-- [x] Integrate PDF text extraction (PyMuPDF)
-- [x] Integrate DOCX text extraction (python-docx)
-- [x] Create text chunking service (recursive splitter)
-- [x] Add metadata extraction
-
-### 2.2 Embedding & Vector Store
-- [x] Setup LiteLLM embedding API (replaced sentence-transformers)
-- [x] Use Gemini text-embedding-004 model (768 dims)
-- [x] Create embedding service
-- [x] Implement pgvector for vector storage (replaced ChromaDB)
-- [x] Create document indexing pipeline
-- [x] Implement document deletion (remove from vector store)
-
-### 2.3 Retrieval Pipeline
-- [x] Implement dense search (cosine similarity with pgvector)
-- [x] Implement document scope filter (rag_document_ids)
-- [ ] Implement hybrid search (Dense + BM25) - optional
-- [x] Create query preprocessing
-- [x] Implement context assembly
-- [ ] Add re-ranking (optional)
-- [ ] Add query expansion (optional)
-- [ ] Add chunk overlap in chunking (optional)
-- [ ] Add metadata filtering (date, file type) - optional
-- [ ] Add RAG evaluation metrics (precision/recall) - optional
-- [x] Create RAG prompt template
-
-### 2.4 Source Citations
-- [x] Track source documents in retrieval
-- [x] Include sources in LLM response
-- [x] Parse and display sources in frontend
-- [x] Link to original document/page
-
-### 2.5 Document Management UI
-- [x] Create document list component
-- [x] Implement document upload UI (drag & drop)
-- [x] Show upload progress
-- [x] Display document status (processing, ready, error)
-- [x] Implement document delete UI
-
-**Phase 2 Deliverable**: User can upload documents and ask questions with RAG
+#### FE-001 - FE-007: Auth Frontend
+- [x] Auth store: `frontend/src/lib/stores/auth.svelte.ts`
+- [x] API client: `frontend/src/lib/api/client.ts`
+- [x] Auth API: `frontend/src/lib/api/auth.ts`
+- [x] Login page: `frontend/src/routes/login/+page.svelte`
+- [x] Register page: `frontend/src/routes/register/+page.svelte`
+- [x] Auth guard: `frontend/src/routes/(app)/+layout.svelte`
+- [x] Settings page: `frontend/src/routes/(app)/settings/+page.svelte`
 
 ---
 
-## Phase 3: PII Protection (Privacy & Safety)
+## PHASE 2: Chat System
 
-### 3.1 Presidio Integration
-- [ ] Install Microsoft Presidio (analyzer + anonymizer)
-- [ ] Create PIIScrubber service class
-- [ ] Implement Thai PII recognizers (phone, ID card, name)
-- [ ] Create custom recognizers for medical records
+### 2.1 Backend Chat
 
-### 3.2 PII Middleware
-- [ ] Create PII scrubber middleware
-- [ ] Implement privacy level settings (strict/moderate/off)
-- [ ] Add PII mapping storage (for potential restoration)
-- [ ] Create encrypted audit logging
-
-### 3.3 Privacy Settings UI
-- [ ] Add privacy level selector per project
-- [ ] Create PII indicator component (show when PII detected)
-- [ ] Implement admin PII audit dashboard
-- [ ] Add PII stats visualization
-
-**Phase 3 Deliverable**: All queries scrubbed before LLM, audit trail available
+#### BE-010 - BE-013: Chat Models & Service
+- [x] Conversation model: `backend/app/models/conversation.py`
+- [x] Message model: `backend/app/models/message.py`
+- [x] Conversation service: `backend/app/services/conversation.py`
+- [x] Conversations routes: `backend/app/routes/conversations.py`
 
 ---
 
-## Phase 4: Agent System
+#### BE-014: LiteLLM chat integration
+- [ ] สร้าง LLM service สำหรับ chat completion
 
-### 4.1 Agent Core (Backend)
-- [x] Create Agent model & schema
-- [x] Implement agent configuration loader (YAML)
-- [x] Create agent registry (TOOL_REGISTRY)
-- [x] Implement agent execution engine (AgentEngine)
-- [x] Add tool execution framework (BaseTool)
-- [x] Create agent routes (list, get, tools)
-- [x] Integrate agent_slug with chat endpoint
-
-### 4.2 Built-in Tools
-- [x] Create RAG search tool
-- [ ] Create summarize tool
-- [ ] Create calculator tool
-- [ ] Create web search tool (optional)
-
-### 4.3 Pre-built System Agents (YAML)
-- [x] Create General agent (general.yaml)
-- [ ] Create HR agent (hr.yaml)
-- [ ] Create Legal agent (legal.yaml)
-- [x] Create Finance agent (finance.yaml)
-- [ ] Create Research agent (research.yaml)
-- [ ] Create Mental Health agent (mental_health.yaml) - PII-safe
-
-### 4.4 Agent UI (Frontend)
-- [x] Create Agent API client (agents.ts)
-- [x] Create Agent store (agents.svelte.ts)
-- [x] Create AgentSelector component (dropdown)
-- [x] Create AgentCard component
-- [x] Create AgentThinking component (step-by-step display)
-- [x] Integrate AgentSelector into ChatHeader
-- [x] Pass agent_slug in chat requests
-- [x] Create Agents page (/agents)
-- [x] Add Agents link to Sidebar
-
-### 4.5 User-Created Agents ⭐ NEW
-- [x] Update Agent model with user_id, document_ids, project_id
-- [x] Create agent CRUD API (POST/PUT/DELETE)
-- [x] Create AgentForm component (create/edit)
-- [x] Add "New Agent" button on Agents page
-- [x] Implement document linking in agent form
-- [x] Implement project scoping
-
-**Phase 4 Deliverable**: User can select different agents for different tasks, create custom agents
+**Description:** สร้าง service ที่เรียก LiteLLM API สำหรับ chat (ทั้ง sync และ stream)
+**Files:** `backend/app/services/llm.py`
+**Reference:**
+- Config: `backend/app/config.py` (litellm_api_url, litellm_api_key)
+- Pattern: ดู async service ใน `backend/app/services/embedding.py`
+**Input:** messages list, model name, stream flag
+**Output:** LLM response หรือ async generator สำหรับ streaming
+**Done when:** ส่ง message แล้วได้ response จาก LLM
 
 ---
 
-## Phase 5: Database Integration (sql_query tool)
+#### BE-015: Chat streaming (SSE)
+- [ ] Implement SSE streaming endpoint
 
-### 5.1 Database Connection Management
-- [ ] Create DatabaseConnection model
-- [ ] Implement secure connection storage
-- [ ] Create connection test endpoint
-- [ ] Support PostgreSQL and MySQL
-
-### 5.2 sql_query Tool Implementation
-- [ ] Create sql_query tool class (extends BaseTool)
-- [ ] Integrate with Agent execution engine
-- [ ] Add to Data Analyst agent
-
-### 5.3 Schema Linking (RAG on Schema)
-- [ ] Extract schema metadata from connected databases
-- [ ] Create schema embedding service
-- [ ] Build schema vector index
-- [ ] Implement relevant table finder
-- [ ] Create schema pruning logic
-
-### 5.4 SQL Generation & Validation
-- [ ] Create SQL generator with pruned schema
-- [ ] Implement SQL validation (SELECT only)
-- [ ] Add safety checks (no DROP, DELETE, etc.)
-- [ ] Create query explanation generator
-
-### 5.5 User Confirmation UI
-- [ ] Create SQLConfirm component
-- [ ] Display generated SQL with syntax highlighting
-- [ ] Show affected tables and estimated rows
-- [ ] Add Edit/Execute/Cancel buttons
-
-### 5.6 Safe Execution
-- [ ] Create read-only database executor
-- [ ] Implement query timeout (30 seconds)
-- [ ] Add row limit (1000 rows)
-- [ ] Create result formatter (table/chart)
-
-**Phase 5 Deliverable**: sql_query tool working, Agent can query database safely
+**Description:** สร้าง POST /chat/stream ที่ stream LLM response กลับ frontend ผ่าน SSE
+**Files:** `backend/app/routes/chat.py`
+**Reference:**
+- SSE: ใช้ `sse-starlette` library
+- RAG: `backend/app/services/rag.py` (retrieve_context, build_rag_prompt)
+- Conversation: `backend/app/services/conversation.py` (add_message)
+**Input:** ChatRequest (message, conversation_id?, agent_slug?, project_id?)
+**Output:** SSE events - start, chunk, sources, done, error
+**Dependencies:** `pip install sse-starlette`
+**Done when:** Frontend receives streaming chunks, messages saved to DB
 
 ---
 
-## Phase 4: Project System ✅ DONE
+#### BE-017: Chat schemas
+- [ ] สร้าง Pydantic schemas สำหรับ chat
 
-### 4.1 Project Backend (MVP)
-- [x] Update Project model (already exists, verify fields)
-- [x] Create ProjectDocument junction table (many-to-many)
-- [x] Add project_id to Conversation (optional FK, one-to-many)
-- [x] Implement project CRUD API
-- [x] Implement assign/remove documents to project API
-- [x] Update RAG to filter by project (optional scope)
-- [x] Create database migration
-
-### 4.2 Project UI (MVP)
-- [x] Create project list in sidebar
-- [x] Implement create/edit project dialog
-- [x] Add project switching
-- [x] Create project detail page (show documents/conversations)
-- [x] Implement assign documents UI
-- [x] Filter chat by project context
-
-### 4.3 Conversation Management
-- [x] Create Conversation model
-- [x] Create Message model
-- [x] Implement conversation CRUD API
-- [x] Add conversation history retrieval
-- [ ] Implement context window management (later)
-- [ ] Add conversation summarization (later)
-
-### 4.4 Project Enhancements (Later - NOT MVP)
-- [ ] Team/Multi-user support (ProjectMember, roles, permissions)
-- [ ] Project settings (privacy level, default agent)
-- [ ] Project archive/restore (soft delete)
-- [ ] Project templates
-- [ ] Bulk assign documents
-- [ ] Project search/filter
-- [ ] Project stats (doc count, usage)
-
-**Phase 4 Deliverable**: User can organize documents into projects, RAG scoped by project ✅
+**Description:** สร้าง ChatRequest, ChatResponse, StreamEvent schemas
+**Files:** `backend/app/schemas/chat.py`
+**Reference:** ดู pattern จาก `backend/app/schemas/auth.py`
+**Done when:** Schemas validate ถูกต้อง
 
 ---
 
-## Phase 6: Advanced Tools & Multi-Agent
+#### BE-018: Track token usage
+- [ ] บันทึก tokens ในแต่ละ message
 
-### 6.1 Image & Multimodal Tools ⭐ NEW
-- [ ] Create image_analyze tool (Gemini Vision)
-- [ ] Create image_gen tool (Imagen 3)
-- [ ] Create image_edit tool (Inpainting)
-- [ ] Create tts tool (Gemini 2.5 TTS)
-
-### 6.2 Advanced Tools
-- [ ] Create code_executor tool (Python/JS in Docker sandbox)
-- [ ] Create api_caller tool (external API integration)
-- [ ] Create file_manager tool (read/write user files)
-- [ ] Create web_scraper tool (extract web content)
-- [ ] Add tool safety measures (rate limiting, sandboxing)
-
-### 6.3 Multi-Agent Orchestration
-- [ ] Create Orchestrator Agent (task delegation)
-- [ ] Implement agent-to-agent communication
-- [ ] Create specialized agents (Research, Coder, Writer)
-- [ ] Add task result aggregation
-
-### 6.4 Workflow Builder (Visual Flow Editor - แบบ Flowise) ⭐ PRIORITY
-
-> **Tech Stack**: Svelte Flow (@xyflow/svelte) + Custom Nodes
-> **Reference**: [Flowise AgentFlow V2](https://docs.flowiseai.com/using-flowise/agentflowv2)
-
-#### 6.4.1 Database & Models
-- [ ] Create Workflow model (id, name, description, user_id, nodes, edges, is_active)
-- [ ] Create WorkflowExecution model (id, workflow_id, status, inputs, outputs, started_at, completed_at)
-- [ ] Create Alembic migration
-- [ ] Create Pydantic schemas (WorkflowCreate, WorkflowUpdate, WorkflowResponse)
-
-#### 6.4.2 Backend API
-- [ ] Create workflow routes (CRUD: GET, POST, PUT, DELETE /api/workflows)
-- [ ] Create workflow execution endpoint (POST /api/workflows/{id}/execute)
-- [ ] Create workflow execution engine (WorkflowEngine class)
-- [ ] Implement node executor registry (NodeExecutorRegistry)
-- [ ] Add workflow validation service
-
-#### 6.4.3 Node Types (Backend Executors)
-- [ ] StartNode executor - workflow entry point
-- [ ] EndNode executor - workflow exit point
-- [ ] LLMNode executor - call LiteLLM for text generation
-- [ ] AgentNode executor - use existing Agent system
-- [ ] RAGNode executor - search documents with RAG
-- [ ] ToolNode executor - execute specific tool
-- [ ] ConditionNode executor - if/else branching
-- [ ] LoopNode executor - iterate over items
-- [ ] CustomFunctionNode executor - run custom Python code
-- [ ] HTTPNode executor - call external APIs
-
-#### 6.4.4 Frontend - Visual Editor
-- [ ] Install @xyflow/svelte
-- [ ] Create /workflows route and page
-- [ ] Create WorkflowCanvas component (main editor)
-- [ ] Create NodePalette component (drag source - sidebar)
-- [ ] Create WorkflowToolbar component (save, run, settings)
-- [ ] Create MiniMap component
-- [ ] Create WorkflowControls component (zoom, fit)
-
-#### 6.4.5 Frontend - Custom Nodes
-- [ ] Create BaseNode component (common node wrapper)
-- [ ] Create StartNode component (green, single output)
-- [ ] Create EndNode component (red, single input)
-- [ ] Create LLMNode component (model selector, prompt input)
-- [ ] Create AgentNode component (agent selector, tools display)
-- [ ] Create RAGNode component (document selector, query input)
-- [ ] Create ToolNode component (tool selector, params)
-- [ ] Create ConditionNode component (condition editor, 2 outputs)
-- [ ] Create LoopNode component (array input, item output)
-- [ ] Create CustomFunctionNode component (code editor)
-- [ ] Create HTTPNode component (method, url, headers, body)
-
-#### 6.4.6 Frontend - Node Configuration
-- [ ] Create NodeConfigPanel component (right sidebar)
-- [ ] Create LLMConfigForm (model, temperature, max_tokens, system_prompt)
-- [ ] Create AgentConfigForm (agent select, knowledge bases)
-- [ ] Create RAGConfigForm (documents, top_k, threshold)
-- [ ] Create ConditionConfigForm (variable, operator, value)
-- [ ] Create HTTPConfigForm (method, url, headers, body template)
-
-#### 6.4.7 Frontend - Execution & Debug
-- [ ] Create ExecutionPanel component (show running state)
-- [ ] Create NodeExecutionStatus component (pending/running/success/error)
-- [ ] Create ExecutionLog component (step-by-step log)
-- [ ] Create VariableInspector component (view flow state)
-- [ ] Implement real-time execution updates (SSE/WebSocket)
-
-#### 6.4.8 Workflow Management
-- [ ] Create WorkflowList page (/workflows)
-- [ ] Create WorkflowCard component
-- [ ] Create CreateWorkflowDialog
-- [ ] Create DuplicateWorkflow function
-- [ ] Create ImportWorkflow function (JSON)
-- [ ] Create ExportWorkflow function (JSON)
-
-#### 6.4.9 Advanced Features (Later)
-- [ ] Add trigger-based automation (webhook, schedule)
-- [ ] Implement scheduled tasks (cron)
-- [ ] Add workflow templates
-- [ ] Add workflow versioning
-- [ ] Add workflow sharing
-
-**Phase 6 Deliverable**: Visual workflow builder with drag & drop, multiple node types, and execution engine
+**Description:** หลัง LLM response ให้บันทึก tokens_used ใน Message และสร้าง UsageRecord
+**Files:** `backend/app/services/usage.py`, `backend/app/routes/chat.py`
+**Reference:**
+- UsageRecord model: `backend/app/models/usage.py`
+- Message.tokens_used field: `backend/app/models/message.py`
+**Done when:** UsageRecord ถูกสร้างหลังทุก chat
 
 ---
 
-## Phase 7: Polish & Production
+### 2.2 Frontend Chat
 
-### 7.1 Usage Tracking
-- [ ] Create usage tracking service
-- [ ] Track token usage per user
-- [ ] Track request count per user
-- [ ] Calculate cost per user
-- [ ] Store usage history
-
-### 7.2 Limits & Quotas ✅ DONE
-- [x] Implement user tier system (Free/Pro/Enterprise) - Plan model + User.tier
-- [x] Add token quota (monthly) - quota service + chat endpoint blocking
-- [x] Add rate limiting (requests/minute) - via LiteLLM key RPM limits
-- [x] Add document upload limit - quota service + document endpoint blocking
-- [x] Add project count limit - quota service + project endpoint blocking
-- [x] Implement 80% usage warning - quota service `is_warning` flag
-- [x] Implement limit reached blocking - 429 response on quota exceeded
-
-### 7.3 Debug Panel
-- [ ] Create debug panel component (collapsible)
-- [ ] Show retrieved chunks
-- [ ] Display similarity scores
-- [ ] Show retrieval latency
-- [ ] Display token count
-- [ ] Show cost estimation
-
-### 7.4 Admin Panel ✅ DONE
-- [x] Create admin routes (protected)
-- [x] Implement user list view
-- [x] Add user edit (tier, limits)
-- [x] Add user suspend/ban
-- [x] Create usage dashboard
-- [x] Add system metrics view
-- [x] Create audit logs viewer
-- [x] Create plans management
-- [x] Create subscriptions management
-- [x] Create settings management
-- [x] Create system health monitoring
-
-### 7.5 Polish & Optimization
-- [ ] Add comprehensive error handling
-- [ ] Implement retry logic
-- [ ] Add loading states throughout
-- [ ] Optimize database queries
-- [ ] Add caching where appropriate
-- [ ] Performance testing
-- [ ] Security audit
-
-**Phase 7 Deliverable**: Production-ready application
+#### FE-008 - FE-014: Chat Frontend
+- [x] Chat store: `frontend/src/lib/stores/chats.svelte.ts`
+- [x] Chat API: `frontend/src/lib/api/chat.ts`
+- [x] Chat page: `frontend/src/routes/(app)/chat/+page.svelte`
+- [x] Chat [id] page: `frontend/src/routes/(app)/chat/[id]/+page.svelte`
+- [x] Chats list: `frontend/src/routes/(app)/chats/+page.svelte`
 
 ---
 
-## Optional: Fine-tuning Module (On Request)
+#### FE-010: ChatMessage component
+- [ ] ตรวจสอบว่ามี component แสดง message
 
-> ⚠️ **Optional**: ฟีเจอร์นี้ไม่จำเป็นสำหรับ MVP เนื่องจาก RAG + Prompting เพียงพอสำหรับ use case ส่วนใหญ่
-
-### 9.1 Job Dispatcher API
-- [ ] Create FinetuneJob model
-- [ ] Implement job CRUD endpoints
-- [ ] Create job queue (PostgreSQL-based)
-- [ ] Add job status tracking
-
-### 9.2 GPU Cloud Integration
-- [ ] Create Colab worker notebook template
-- [ ] Implement Hugging Face Hub integration
-- [ ] Create model deployment flow
-
-### 9.3 Fine-tuning UI
-- [ ] Create fine-tuning dashboard
-- [ ] Implement job creation form
-- [ ] Add job status display
-
-**When to implement**:
-- เมื่อต้องการ custom style/format ที่ prompting ทำไม่ได้
-- เมื่อมี training data มากพอ (>1,000 examples)
-- เมื่อ scale ใหญ่พอที่จะคุ้มค่า cost
+**Description:** Component แสดง chat message พร้อม markdown rendering และ code highlighting
+**Files:** `frontend/src/lib/components/chat/ChatMessage.svelte`
+**Reference:**
+- Icons: `frontend/src/lib/components/icons/`
+- Markdown: ใช้ `marked` + `highlight.js`
+**Done when:** Render markdown และ code blocks ได้
 
 ---
 
-## Technical Debt & Improvements
+#### FE-011: ChatInput component
+- [ ] ตรวจสอบว่ามี input component
 
-- [ ] Add comprehensive unit tests
-- [ ] Add integration tests
-- [ ] Setup CI/CD pipeline (GitHub Actions)
-- [ ] Add API documentation (OpenAPI/Swagger)
-- [ ] Create deployment documentation
-- [ ] Setup monitoring (Prometheus + Grafana)
-- [ ] Add logging infrastructure
-- [ ] Security audit
-- [ ] Create user documentation
+**Description:** Textarea สำหรับพิมพ์ message พร้อม keyboard shortcuts
+**Files:** `frontend/src/lib/components/chat/ChatInput.svelte`
+**Reference:** ดู Textarea component จาก `frontend/src/lib/components/ui/textarea/`
+**Done when:** Enter = send, Shift+Enter = newline
+
+---
+
+#### FE-015: Sidebar conversations
+- [ ] แสดง recent conversations ใน sidebar
+
+**Description:** แสดงรายการ conversations ล่าสุดใน sidebar
+**Files:** `frontend/src/lib/components/layout/Sidebar.svelte`
+**Reference:**
+- Store: `frontend/src/lib/stores/chats.svelte.ts`
+- API: `frontend/src/lib/api/conversations.ts`
+**Done when:** Click conversation → navigate to chat
+
+---
+
+## PHASE 3: Document & RAG
+
+### 3.1 Backend Documents
+
+#### BE-019 - BE-023: Document Models & Service
+- [x] Document model: `backend/app/models/document.py`
+- [x] DocumentChunk model: `backend/app/models/chunk.py`
+- [x] Storage service: `backend/app/services/storage.py`
+- [x] Document service: `backend/app/services/document.py`
+- [x] Documents routes: `backend/app/routes/documents.py`
+
+---
+
+#### BE-024: PDF/DOCX parser
+- [ ] Extract text จาก PDF และ DOCX
+
+**Description:** สร้าง parser functions สำหรับ extract text จากไฟล์ต่างๆ
+**Files:** `backend/app/services/document_processor.py`
+**Reference:** ดู file_type field ใน Document model
+**Dependencies:** `pip install pymupdf python-docx`
+**Supported types:** PDF, DOCX, TXT, MD, CSV
+**Done when:** Parse ไฟล์แต่ละ type ได้ถูกต้อง
+
+---
+
+#### BE-025: Text chunking
+- [ ] Split text เป็น chunks
+
+**Description:** แบ่ง text เป็น overlapping chunks สำหรับ embedding
+**Files:** `backend/app/services/document_processor.py`
+**Config:** chunk_size=500 words, overlap=100 words
+**Done when:** Chunks generated correctly with overlap
+
+---
+
+#### BE-026 - BE-027: Embedding & Vector Store
+- [x] Embedding service: `backend/app/services/embedding.py`
+- [x] Vector store: `backend/app/services/vector_store.py`
+
+---
+
+#### BE-028: Background document processor
+- [ ] Process document ใน background
+
+**Description:** Pipeline: upload → parse → chunk → embed → save chunks
+**Files:** `backend/app/services/document_processor.py`
+**Reference:**
+- Document.status enum: pending → processing → ready/error
+- Embedding: `backend/app/services/embedding.py`
+- Chunk model: `backend/app/models/chunk.py`
+**Done when:** Upload → status changes: pending → processing → ready
+
+---
+
+#### BE-030: RAG in chat flow
+- [x] RAG service: `backend/app/services/rag.py`
+- [ ] Integrate กับ chat streaming
+
+**Description:** ใน chat stream ให้เรียก retrieve_context และ build_rag_prompt ก่อนส่งไป LLM
+**Files:** `backend/app/routes/chat.py`
+**Reference:** `backend/app/services/rag.py`
+**Done when:** Chat uses document context when agent has documents
+
+---
+
+### 3.2 Frontend Documents
+
+#### FE-016 - FE-019: Documents Frontend
+- [x] Documents API: `frontend/src/lib/api/documents.ts`
+- [x] Documents list: `frontend/src/routes/(app)/documents/+page.svelte`
+- [x] Document detail: `frontend/src/routes/(app)/documents/[id]/+page.svelte`
+
+---
+
+#### FE-018: Document upload UI
+- [ ] ตรวจสอบ upload component
+
+**Description:** Drag-drop zone, file picker, progress bar สำหรับ upload
+**Files:** Documents page หรือ separate component
+**Reference:** uploadFile function ใน `frontend/src/lib/api/client.ts`
+**File types:** PDF, DOCX, TXT, MD, CSV
+**Done when:** Upload with progress bar ทำงาน
+
+---
+
+#### FE-020: Document status polling
+- [ ] Poll status จนกว่าจะ ready/error
+
+**Description:** หลัง upload ให้ poll status ทุก 2 วินาที จนกว่าจะ ready หรือ error
+**Files:** `frontend/src/routes/(app)/documents/+page.svelte`
+**Done when:** Status auto-updates บน page
+
+---
+
+## PHASE 4: Project Management
+
+### 4.1 Backend Projects
+
+#### BE-031 - BE-037: Projects Backend
+- [x] Project model: `backend/app/models/project.py`
+- [x] ProjectDocument M2M: `backend/app/models/project_document.py`
+- [x] Project service: `backend/app/services/project.py`
+- [x] Projects routes: `backend/app/routes/projects.py`
+- [ ] ตรวจสอบ M2M operations (add/remove document)
+
+---
+
+### 4.2 Frontend Projects
+
+#### FE-021 - FE-026: Projects Frontend
+- [x] Projects store: `frontend/src/lib/stores/projects.svelte.ts`
+- [x] Projects API: `frontend/src/lib/api/projects.ts`
+- [x] Projects list: `frontend/src/routes/(app)/projects/+page.svelte`
+- [x] Project detail: `frontend/src/routes/(app)/projects/[id]/+page.svelte`
+- [x] ProjectDialog: `frontend/src/lib/components/projects/ProjectDialog.svelte`
+- [x] AssignDocumentsDialog: `frontend/src/lib/components/projects/AssignDocumentsDialog.svelte`
+
+---
+
+#### FE-027: Project selector in chat
+- [ ] เพิ่ม project dropdown ใน chat
+
+**Description:** Dropdown เลือก project เพื่อใช้ documents ของ project นั้นสำหรับ RAG
+**Files:** Chat page
+**Reference:**
+- Select component: `frontend/src/lib/components/ui/select/`
+- Projects store: `frontend/src/lib/stores/projects.svelte.ts`
+**Done when:** Chat ใช้ project's documents สำหรับ RAG
+
+---
+
+## PHASE 5: Agent Builder
+
+### 5.1 Backend Agents
+
+#### BE-038 - BE-045: Agents Backend
+- [x] Agent model: `backend/app/models/agent.py`
+- [x] AgentTool enum: `backend/app/models/agent.py`
+- [x] Agent service: `backend/app/services/agent.py`
+- [x] AgentLoader: `backend/app/services/agent_loader.py`
+- [x] Agents routes: `backend/app/routes/agents.py`
+
+---
+
+#### BE-042: System agents YAML
+- [ ] สร้าง YAML config สำหรับ pre-built agents
+
+**Description:** Define system agents (general, coder, writer) ใน YAML file
+**Files:** `backend/app/agents/system_agents.yaml`
+**Reference:** AgentLoader service จะ load agents จาก file นี้
+**Fields:** slug, name, icon, description, system_prompt, tools[]
+**Done when:** System agents load ตอน app startup
+
+---
+
+#### BE-044: Agent in chat flow
+- [ ] ใช้ agent config ใน chat
+
+**Description:** เมื่อ chat กับ agent ให้ใช้ system_prompt และ tools ของ agent นั้น
+**Files:** `backend/app/routes/chat.py`
+**Reference:**
+- Agent service: `backend/app/services/agent.py`
+- RAG service: `backend/app/services/rag.py`
+**Done when:** Different agents มี different behaviors
+
+---
+
+### 5.2 Frontend Agents
+
+#### FE-028 - FE-035: Agents Frontend
+- [x] Agents store: `frontend/src/lib/stores/agents.svelte.ts`
+- [x] Agents API: `frontend/src/lib/api/agents.ts`
+- [x] Agents list: `frontend/src/routes/(app)/agents/+page.svelte`
+- [x] Agent detail: `frontend/src/routes/(app)/agents/[slug]/+page.svelte`
+- [x] Agent create: `frontend/src/routes/(app)/agents/new/+page.svelte`
+- [x] Agent edit: `frontend/src/routes/(app)/agents/[slug]/edit/+page.svelte`
+- [x] AgentSelector: `frontend/src/lib/components/agents/AgentSelector.svelte`
+- [x] AgentFormDialog: `frontend/src/lib/components/agents/AgentFormDialog.svelte`
+
+---
+
+## PHASE 6: Visual Workflow Builder
+
+### 6.1 Backend Workflows
+
+#### BE-046 - BE-050: Workflow Models & Service
+- [x] Workflow model: `backend/app/models/workflow.py`
+- [x] WorkflowExecution model: `backend/app/models/workflow.py`
+- [x] NodeType enum: `backend/app/models/workflow.py`
+- [x] Workflow service: `backend/app/services/workflow.py`
+- [x] Workflows routes: `backend/app/routes/workflows.py`
+
+---
+
+#### BE-051-057: Workflow node executors
+- [ ] Implement node executors
+
+**Description:** สร้าง WorkflowEngine class ที่ execute แต่ละ node type
+**Files:** `backend/app/services/workflow_engine.py`
+**Reference:**
+- NodeType enum: `backend/app/models/workflow.py`
+- LLM service: `backend/app/services/llm.py`
+- RAG service: `backend/app/services/rag.py`
+**Node types:** start, end, llm, http, rag, condition, loop, agent
+**Done when:** Execute workflow จาก start → end ได้
+
+---
+
+#### BE-059: Execution status SSE
+- [ ] Stream execution progress
+
+**Description:** SSE endpoint สำหรับ stream workflow execution status แบบ real-time
+**Files:** `backend/app/routes/workflows.py`
+**Reference:** ดู SSE pattern จาก chat streaming (BE-015)
+**Events:** node_start, node_complete, error, done
+**Done when:** Frontend เห็น node status เปลี่ยนแบบ real-time
+
+---
+
+### 6.2 Frontend Workflows
+
+#### FE-036 - FE-037: Workflows Frontend Base
+- [x] Workflows API: `frontend/src/lib/api/workflows.ts`
+- [x] Workflows list: `frontend/src/routes/(app)/workflows/+page.svelte`
+- [x] Workflow editor: `frontend/src/routes/(app)/workflows/[id]/+page.svelte`
+
+---
+
+#### FE-038: Setup @xyflow/svelte
+- [ ] Install และ configure Svelte Flow
+
+**Description:** Setup base canvas component สำหรับ workflow builder
+**Files:** `frontend/src/lib/components/workflow/WorkflowCanvas.svelte`
+**Dependencies:** `npm install @xyflow/svelte`
+**Reference:** https://svelteflow.dev/
+**Done when:** Canvas renders with controls และ background
+
+---
+
+#### FE-039-044: Node components
+- [ ] สร้าง custom node components
+
+**Description:** สร้าง Svelte components สำหรับแต่ละ node type
+**Files:** `frontend/src/lib/components/workflow/nodes/`
+**Reference:** @xyflow/svelte Handle, Position components
+**Nodes:** StartNode, EndNode, LLMNode, HTTPNode, RAGNode, ConditionNode
+**Done when:** แต่ละ node render และ config ได้
+
+---
+
+#### FE-045: WorkflowCanvas
+- [ ] Canvas component with drag-drop
+
+**Description:** Canvas ที่ add/connect/delete nodes ได้
+**Files:** `frontend/src/lib/components/workflow/WorkflowCanvas.svelte`
+**Done when:** Drag nodes, connect edges, delete nodes
+
+---
+
+#### FE-047-050: Workflow editor features
+- [ ] Node palette - drag nodes จาก sidebar
+- [ ] Save workflow - save to backend
+- [ ] Execute workflow - trigger และ show progress
+- [ ] Execution overlay - show node status real-time
+
+---
+
+## PHASE 7: Admin & Analytics
+
+### 7.1 Backend Admin
+
+#### BE-060 - BE-065: Admin Models
+- [x] Plan model: `backend/app/models/plan.py`
+- [x] Subscription model: `backend/app/models/subscription.py`
+- [x] Invoice model: `backend/app/models/invoice.py`
+- [x] UsageRecord model: `backend/app/models/usage.py`
+- [x] UsageSummary model: `backend/app/models/usage.py`
+- [x] AuditLog model: `backend/app/models/audit_log.py`
+
+---
+
+#### BE-066: Admin user guard
+- [ ] ตรวจสอบว่ามี get_admin_user dependency
+
+**Description:** Dependency ที่ check is_superuser สำหรับ admin routes
+**Files:** `backend/app/core/dependencies.py`
+**Reference:** ดู get_current_user dependency
+**Done when:** Non-admin users get 403
+
+---
+
+#### BE-067-071: Admin routes
+- [ ] ตรวจสอบว่ามี admin routes ครบ
+
+**Files to check:**
+- `backend/app/routes/admin/users.py`
+- `backend/app/routes/admin/plans.py`
+- `backend/app/routes/admin/usage.py`
+- `backend/app/routes/admin/audit.py`
+- `backend/app/routes/admin/dashboard.py`
+
+---
+
+#### BE-072-074: Billing
+- [x] StripeService: `backend/app/services/stripe_service.py`
+- [x] Billing routes: `backend/app/routes/billing.py`
+- [x] Webhooks routes: `backend/app/routes/webhooks.py`
+
+---
+
+### 7.2 Frontend Admin
+
+#### FE-051-065: Admin & Billing Frontend
+- [x] Admin API: `frontend/src/lib/api/admin.ts`
+- [x] Admin pages: `frontend/src/routes/(admin)/admin/...`
+- [x] Billing API: `frontend/src/lib/api/billing.ts`
+- [x] Billing pages: `frontend/src/routes/(app)/billing/...`
+- [x] Pricing page: `frontend/src/routes/(public)/pricing/+page.svelte`
+
+---
+
+## PHASE 8: Notifications & Polish
+
+### 8.1 Backend Notifications
+
+#### BE-075-076: Notification Models
+- [x] Notification model: `backend/app/models/notification.py`
+- [x] NotificationPreference model: `backend/app/models/notification_preference.py`
+
+---
+
+#### BE-077-080: Notification Service & Routes
+- [ ] ตรวจสอบ notification implementation
+
+**Files to check:**
+- `backend/app/schemas/notification.py`
+- `backend/app/services/notification.py`
+- `backend/app/routes/notifications.py`
+
+**Triggers to implement:**
+- Document ready
+- Workflow complete
+- Usage warning (approaching limit)
+
+---
+
+### 8.2 Frontend Notifications
+
+#### FE-066-067: Notifications Base
+- [x] Notifications store: `frontend/src/lib/stores/notifications.svelte.ts`
+- [x] Notifications API: `frontend/src/lib/api/notifications.ts`
+
+---
+
+#### FE-068-071: Notification UI
+- [ ] Bell component with badge
+- [ ] Notification dropdown
+- [ ] Notifications page
+- [ ] Notification preferences in settings
+
+**Files:** Header component, `frontend/src/routes/(app)/notifications/+page.svelte`
+**Reference:** ดู dropdown pattern จาก `frontend/src/lib/components/ui/dropdown-menu/`
+
+---
+
+### 8.3 Public Pages & Observability
+
+#### FE-072-077: Public Pages
+- [x] Landing, About, Privacy, Terms, Contact, Changelog
+- **Files:** `frontend/src/routes/(public)/...`
+
+---
+
+#### BE-081-083: OpenTelemetry
+- [x] Telemetry setup: `backend/app/core/telemetry.py`
+
+---
+
+#### FE-078-079: Error Tracking
+- [ ] Setup Glitchtip/Sentry
+
+**Description:** Frontend error tracking และ performance monitoring
+**Files:** `frontend/src/hooks.client.ts`
+
+---
+
+## Summary
+
+### Progress by Phase
+
+| Phase | Done | Total | % |
+|-------|------|-------|---|
+| 1 - Auth | 15 | 16 | 94% |
+| 2 - Chat | 11 | 17 | 65% |
+| 3 - Documents | 10 | 15 | 67% |
+| 4 - Projects | 13 | 14 | 93% |
+| 5 - Agents | 14 | 16 | 88% |
+| 6 - Workflows | 6 | 14 | 43% |
+| 7 - Admin | 14 | 17 | 82% |
+| 8 - Notifications | 8 | 12 | 67% |
+
+### Priority Tasks
+
+1. **BE-014: LiteLLM integration** - Core feature
+2. **BE-015: Chat streaming (SSE)** - Core feature
+3. **BE-028: Document processor** - RAG pipeline
+4. **BE-044: Agent in chat flow** - Agent behaviors
+5. **BE-051-057: Workflow node executors** - Workflow engine
+6. **FE-038-050: Workflow UI** - Visual builder
 
 ---
 
 ## Notes
 
-### Priority Order
-1. **Phase 1** - Foundation (Auth, Chat) ✅
-2. **Phase 2** - RAG Core (Documents, Retrieval) ✅
-3. **Phase 3** - Agent System (Tools: rag_search, summarize) 🔄
-4. **Phase 4** - Project System (Organization) ✅
-5. **Phase 5** - Database Integration (sql_query tool)
-6. **Phase 6** - Advanced Tools (code_executor, api_caller, web_scraper)
-7. **Phase 7** - Polish (Production-ready)
-
-### Optional (On Request)
-- **PII Protection** - เมื่อมี target ที่ต้องการ (Mental Health, Medical)
-- **Fine-tuning** - เมื่อ RAG + Prompting ไม่เพียงพอ
-
-### Current Focus
-> **User Profile & Settings In Progress!**
-> **Next Steps**:
-> 1. Create users route (PUT /api/users/me)
-> 2. Create UserSettings model
-> 3. Create settings page UI
-
-### Blockers
-- None currently
-
----
-
-*Last updated: December 3, 2024*
-*Synced with spec v4.2 (Text-to-SQL → sql_query tool, Phase order updated)*
+1. **Codebase พร้อมแล้ว 70%+** - Models, routes, services ส่วนใหญ่เสร็จ
+2. **Focus on integration** - เน้นต่อ components (LLM + RAG + Streaming)
+3. **Workflow ต้องทำมากสุด** - ยังขาด engine และ UI
+4. **Test end-to-end** - ทดสอบ flow ทั้งหมดหลังต่อเสร็จ
