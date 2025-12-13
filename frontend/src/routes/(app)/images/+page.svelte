@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Image, Sparkles, Download, Save, RefreshCw, Loader2, Settings2 } from 'lucide-svelte';
+	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
@@ -88,7 +89,7 @@
 	function handleSaveToKB() {
 		if (!latestImage) return;
 		// TODO: Implement save to knowledge base
-		alert('Save to Knowledge Base - Coming soon!');
+		toast.info('Save to Knowledge Base - Coming soon!');
 	}
 
 	function handleSelectFromHistory(image: (typeof history)[0]) {
