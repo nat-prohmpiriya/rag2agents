@@ -46,8 +46,10 @@ async def check_litellm_health() -> LiteLLMHealth:
                         models_data = models_response.json()
                         if "data" in models_data:
                             models_count = len(models_data["data"])
-                except Exception:
-                    pass
+                except httpx.HTTPError as e:
+                    logger.debug(f"Failed to fetch model count: {e}")
+                except Exception as e:
+                    logger.debug(f"Unexpected error fetching model count: {e}")
 
                 return LiteLLMHealth(
                     status=ServiceStatus.HEALTHY,
