@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -7,8 +9,11 @@ from app.core.database import Base
 from app.core.dependencies import get_db
 from app.main import app
 
-# Use PostgreSQL for testing (same as production)
-TEST_DATABASE_URL = "postgresql+asyncpg://llmproxy:dbpassword9090@localhost:5433/rag_agent"
+# Use DATABASE_URL from environment or default to test database
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    os.environ.get("DATABASE_URL", "postgresql+asyncpg://ragagent:ragagent123@localhost:5432/ragagent"),
+)
 
 
 @pytest.fixture
