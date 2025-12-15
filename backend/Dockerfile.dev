@@ -1,0 +1,30 @@
+# Backend Development Dockerfile
+# Usage: docker build -f Dockerfile.dev -t ragagent-backend-dev .
+# Run: docker run -p 8000:8000 -v $(pwd):/app ragagent-backend-dev
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock README.md ./
+
+# Copy app package for hatchling
+COPY app ./app
+
+# Create virtual environment and install dependencies
+RUN uv sync --frozen
+
+# Expose FastAPI port
+EXPOSE 8000
+
+# Run development server with hot reload
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

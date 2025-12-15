@@ -1,25 +1,18 @@
 # RAG Agent Platform - Development Docker Compose
 # Usage: docker compose up -d
-# With monitoring: docker compose --profile monitoring up -d
-# With app: docker compose --profile app up -d
 
 services:
 
-  # ===========================================
-  # Backend Database (PostgreSQL)
-  # ===========================================
   postgres:
     image: pgvector/pgvector:pg16
     container_name: ragagent-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: ragagent
-      POSTGRES_PASSWORD: ragagent123
-      POSTGRES_DB: ragagent
+      - "5434:5432"
+    env_file: .env.docker
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ragagent -d ragagent"]
       interval: 5s
@@ -28,15 +21,12 @@ services:
     networks:
       - app-network
 
-  # ===========================================
-  # Redis (shared: rate limiting, caching)
-  # ===========================================
   redis:
     image: redis:7-alpine
     container_name: ragagent-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6381:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
@@ -48,68 +38,21 @@ services:
     networks:
       - app-network
 
-  # ===========================================
-  # LiteLLM Database (PostgreSQL)
-  # ===========================================
-  litellm-db:
-    image: postgres:16-alpine
-    container_name: ragagent-litellm-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: llmproxy
-      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-dbpassword9090}
-      POSTGRES_DB: litellm
-    volumes:
-      - litellm-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U llmproxy -d litellm"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - app-network
-
-  # ===========================================
-  # LiteLLM Proxy
-  # ===========================================
   litellm:
-    image: ghcr.io/berriai/litellm-database:main-latest
+    image: ghcr.io/berriai/litellm:v1.80.8-stable
     platform: linux/amd64
     container_name: ragagent-litellm
     restart: unless-stopped
     ports:
       - "4000:4000"
+    env_file: .env.docker
+    environment:
+      DATABASE_URL: ${LITELLM_DATABASE_URL}
     volumes:
       - ./infra/litellm-config.yaml:/app/config.yaml
-    command:
-      - "--config"
-      - "/app/config.yaml"
-      - "--port"
-      - "4000"
-      - "--num_workers"
-      - "8"
-    environment:
-      DATABASE_URL: "postgresql://llmproxy:${LITELLM_DB_PASSWORD:-dbpassword9090}@litellm-db:5432/litellm"
-      STORE_MODEL_IN_DB: "True"
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
-      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
-      # LLM Provider API Keys
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AZURE_API_KEY: ${AZURE_API_KEY:-}
-      AZURE_API_BASE: ${AZURE_API_BASE:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
-      COHERE_API_KEY: ${COHERE_API_KEY:-}
-      # Redis configuration
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      # UI credentials
-      UI_USERNAME: ${UI_USERNAME:-admin}
-      UI_PASSWORD: ${UI_PASSWORD:-admin123}
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
     depends_on:
-      litellm-db:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -122,60 +65,11 @@ services:
     networks:
       - app-network
 
-  # ===========================================
-  # OpenTelemetry Collector
-  # ===========================================
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.114.0
-    container_name: ragagent-otel-collector
-    restart: unless-stopped
-    profiles:
-      - observability
-    ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8889:8889"   # Prometheus metrics exporter
-      - "13133:13133" # Health check
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
-    depends_on:
-      - jaeger
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
-  # ===========================================
-  # Jaeger (Distributed Tracing UI)
-  # ===========================================
-  jaeger:
-    image: jaegertracing/all-in-one:1.62
-    container_name: ragagent-jaeger
-    restart: unless-stopped
-    profiles:
-      - observability
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250" # gRPC (for OTEL collector)
-    environment:
-      COLLECTOR_OTLP_ENABLED: "true"
-    networks:
-      - app-network
-
-
 volumes:
   postgres-data:
     name: ragagent-postgres-data
   redis-data:
     name: ragagent-redis-data
-  litellm-postgres-data:
-    name: ragagent-litellm-postgres-data
-  prometheus-data:
-    name: ragagent-prometheus-data
 
 networks:
   app-network:
