@@ -8,8 +8,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2, Bell, Sparkles, Workflow } from 'lucide-svelte';
-	import { chatStore, type Conversation } from '$lib/stores';
-	import { NotificationBell } from '$lib/components/notifications';
+	import { chatStore, type Conversation, notificationStore } from '$lib/stores';
 	import * as m from '$lib/paraglide/messages';
 
 	let {
@@ -39,6 +38,7 @@
 		{ label: m.nav_projects(), href: '/projects', icon: Folder },
 		{ label: m.nav_agents(), href: '/agents', icon: Bot },
 		{ label: 'Workflows', href: '/workflows', icon: Workflow },
+		{ label: m.nav_notifications(), href: '/notifications', icon: Bell },
 	]);
 
 	let chatHistoryContainer = $state<HTMLDivElement | null>(null);
@@ -143,6 +143,8 @@
 		<nav class="flex flex-col gap-1">
 			{#each navItems as item}
 				{@const Icon = item.icon}
+				{@const isNotification = item.href === '/notifications'}
+				{@const unreadCount = isNotification ? notificationStore.unreadCount : 0}
 				{#if collapsed}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -150,19 +152,27 @@
 								<a
 									{...props}
 									href={item.href}
-									class="flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+									class="relative flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
 										item.href
 									)
 										? 'bg-accent text-accent-foreground'
 										: ''}"
 								>
 									<Icon class="h-5 w-5" />
+									{#if isNotification && unreadCount > 0}
+										<span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+											{unreadCount > 9 ? '9+' : unreadCount}
+										</span>
+									{/if}
 								</a>
 							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Portal>
 							<Tooltip.Content side="right">
 								{item.label}
+								{#if isNotification && unreadCount > 0}
+									<span class="ml-1 text-muted-foreground">({unreadCount})</span>
+								{/if}
 							</Tooltip.Content>
 						</Tooltip.Portal>
 					</Tooltip.Root>
@@ -175,8 +185,20 @@
 							? 'bg-accent text-accent-foreground'
 							: ''}"
 					>
-						<Icon class="h-4 w-4" />
+						<div class="relative">
+							<Icon class="h-4 w-4" />
+							{#if isNotification && unreadCount > 0}
+								<span class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[8px] font-medium text-destructive-foreground">
+									{unreadCount > 9 ? '!' : unreadCount}
+								</span>
+							{/if}
+						</div>
 						{item.label}
+						{#if isNotification && unreadCount > 0}
+							<span class="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium text-destructive-foreground">
+								{unreadCount > 99 ? '99+' : unreadCount}
+							</span>
+						{/if}
 					</a>
 				{/if}
 			{/each}
@@ -247,24 +269,9 @@
 		</div>
 	{/if}
 
-	<!-- Notification & User Avatar & Toggle button -->
+	<!-- User Avatar & Toggle button -->
 	<div class="mt-auto p-2">
 		{#if collapsed}
-			<!-- Collapsed: Notification bell -->
-			{#if user}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<div {...props} class="flex justify-center mb-1">
-								<NotificationBell />
-							</div>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Portal>
-						<Tooltip.Content side="right">{m.nav_notifications()}</Tooltip.Content>
-					</Tooltip.Portal>
-				</Tooltip.Root>
-			{/if}
 			<!-- Collapsed: User avatar icon -->
 			{#if user}
 				<Tooltip.Root>
@@ -353,13 +360,7 @@
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		{:else}
-			<!-- Expanded: Notification + User info + logout -->
-			{#if user}
-				<div class="flex items-center gap-2 px-3 py-2 mb-1">
-					<NotificationBell />
-					<span class="text-sm text-muted-foreground">{m.nav_notifications()}</span>
-				</div>
-			{/if}
+			<!-- Expanded: User info + logout -->
 			{#if user}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>

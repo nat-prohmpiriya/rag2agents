@@ -79,7 +79,11 @@
 	async function loadModels() {
 		try {
 			const response = await chatApi.getModels();
-			models = response.models;
+			// Filter out image generation and embedding models
+			models = response.models.filter((m: ModelInfo) =>
+				!m.id.toLowerCase().includes('imagen') &&
+				!m.id.toLowerCase().includes('embedding')
+			);
 
 			// Select initial model or default to Gemini 2.5 Flash
 			if (initialModel) {
