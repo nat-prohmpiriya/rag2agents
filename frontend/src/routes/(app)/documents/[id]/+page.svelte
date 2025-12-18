@@ -8,7 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowLeft, FileText, MessageSquare, PanelRightClose, PanelRight } from 'lucide-svelte';
 
-	const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+	const API_BASE = import.meta.env.VITE_API_URL || '';
 
 	let document = $state<DocumentDetail | null>(null);
 	let loading = $state(true);

@@ -244,7 +244,7 @@ export const workflowsApi = {
 		abortSignal?: AbortSignal
 	): Promise<void> => {
 		const token = localStorage.getItem('token');
-		const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+		const baseUrl = import.meta.env.VITE_API_URL || '';
 
 		const response = await fetch(`${baseUrl}/api/v1/workflows/${workflowId}/chat`, {
 			method: 'POST',
