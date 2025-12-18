@@ -149,8 +149,8 @@ if settings.serve_static_files and os.path.exists(settings.static_files_path):
             app.mount(f"/{static_dir}", StaticFiles(directory=static_path), name=static_dir)
 
     # SPA catch-all route - serves index.html for all non-API routes
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str) -> FileResponse | JSONResponse:
+    @app.get("/{full_path:path}", response_model=None)
+    async def serve_spa(full_path: str):
         """Serve SPA for client-side routing."""
         # Skip API routes
         if full_path.startswith("api/"):
