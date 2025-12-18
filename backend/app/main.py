@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
@@ -139,7 +139,34 @@ app.include_router(webhooks.router, prefix="/api/v1")
 
 # Serve static files (frontend) - must be last to not override API routes
 if settings.serve_static_files and os.path.exists(settings.static_files_path):
-    app.mount("/", StaticFiles(directory=settings.static_files_path, html=True), name="static")
+    # Mount static files for assets (js, css, images, etc.)
+    app.mount("/_app", StaticFiles(directory=os.path.join(settings.static_files_path, "_app")), name="app_assets")
+
+    # Check if other static directories exist and mount them
+    for static_dir in ["fonts", "images", "icons"]:
+        static_path = os.path.join(settings.static_files_path, static_dir)
+        if os.path.exists(static_path):
+            app.mount(f"/{static_dir}", StaticFiles(directory=static_path), name=static_dir)
+
+    # SPA catch-all route - serves index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str) -> FileResponse | JSONResponse:
+        """Serve SPA for client-side routing."""
+        # Skip API routes
+        if full_path.startswith("api/"):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+        # Try to serve static file first
+        static_file = os.path.join(settings.static_files_path, full_path)
+        if os.path.isfile(static_file):
+            return FileResponse(static_file)
+
+        # Fallback to index.html for SPA routing
+        index_path = os.path.join(settings.static_files_path, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path, media_type="text/html")
+
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
 else:
     # Default root endpoint when not serving static files
     @app.get("/")
