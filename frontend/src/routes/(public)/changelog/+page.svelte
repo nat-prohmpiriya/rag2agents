@@ -8,7 +8,7 @@
       date: "2024-12-01",
       type: "feature",
       changes: [
-        "Added multi-model support (OpenAI, Gemini, Groq)",
+        "Added multi-model support (Google Gemini)",
         "New usage analytics dashboard",
         "Improved document processing speed by 40%",
         "Added custom tools builder"

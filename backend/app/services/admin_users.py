@@ -1,5 +1,6 @@
 """Admin user management service."""
 
+import logging
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
@@ -16,6 +17,8 @@ from app.models.plan import Plan
 from app.models.subscription import BillingInterval, Subscription, SubscriptionStatus
 from app.models.user import User
 from app.schemas.admin import AdminUserUpdate
+
+logger = logging.getLogger(__name__)
 
 
 @traced()

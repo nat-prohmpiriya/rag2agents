@@ -1,7 +1,7 @@
 import { fetchApi } from './client';
 import { ApiException } from '$lib/types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 export interface ModelInfo {
 	id: string;
@@ -23,6 +23,11 @@ export interface ModelsResponse {
 	models: ModelInfo[];
 }
 
+export interface ImageData {
+	media_type: string;
+	data: string; // base64 encoded
+}
+
 export interface ChatRequest {
 	message: string;
 	conversation_id?: string;
@@ -39,6 +44,9 @@ export interface ChatRequest {
 	project_id?: string;
 	agent_slug?: string;
 	skip_user_save?: boolean;
+	thinking?: boolean;
+	web_search?: boolean;
+	images?: ImageData[];
 }
 
 export interface ChatMessage {
@@ -96,7 +104,7 @@ export const chatApi = {
 	 * Get available models
 	 */
 	getModels: async (): Promise<ModelsResponse> => {
-		return fetchApi<ModelsResponse>('/api/chat/models', {
+		return fetchApi<ModelsResponse>('/chat/models', {
 			method: 'GET',
 		});
 	},
@@ -105,7 +113,7 @@ export const chatApi = {
 	 * Send chat message (non-streaming)
 	 */
 	send: async (data: ChatRequest): Promise<ChatResponse> => {
-		return fetchApi<ChatResponse>('/api/chat', {
+		return fetchApi<ChatResponse>('/chat', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -123,7 +131,7 @@ export const chatApi = {
 	): Promise<{ traceId: string | null; conversationId: string | null }> => {
 		const token = localStorage.getItem('access_token');
 
-		const response = await fetch(`${API_BASE}/api/chat/stream`, {
+		const response = await fetch(`${API_BASE}/chat/stream`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

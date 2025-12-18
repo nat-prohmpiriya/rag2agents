@@ -23,7 +23,7 @@
     {
       icon: Layers,
       title: "Multi-Model Support",
-      description: "Choose from OpenAI GPT-4, Google Gemini, Groq, and more. Switch models without changing your workflow.",
+      description: "Powered by Google Gemini models. Choose from Gemini Pro, Flash, and more without changing your workflow.",
       color: "pink"
     },
     {

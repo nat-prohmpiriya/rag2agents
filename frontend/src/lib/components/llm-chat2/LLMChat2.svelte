@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { chatApi, type ModelInfo, type SourceInfo, type UsageInfo, type LatencyInfo } from '$lib/api/chat';
+	import { chatApi, type ModelInfo, type SourceInfo, type UsageInfo, type LatencyInfo, type ImageData } from '$lib/api/chat';
 	import ChatHeader from './ChatHeader.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ChatMessage from './ChatMessage.svelte';
@@ -16,6 +16,13 @@
 		sources?: SourceInfo[];
 		usage?: UsageInfo;
 		latency?: LatencyInfo;
+		images?: string[]; // base64 previews for display
+	}
+
+	interface UploadedImage {
+		id: string;
+		file: File;
+		preview: string;
 	}
 
 	interface Props {
@@ -23,6 +30,7 @@
 		conversationTitle?: string;
 		initialMessages?: ApiMessage[];
 		initialModel?: string;
+		agentSlug?: string;
 		onConversationCreated?: (id: string) => void;
 		onNewChat?: () => void;
 		onDelete?: () => void;
@@ -33,6 +41,7 @@
 		conversationTitle = 'New conversation',
 		initialMessages = [],
 		initialModel,
+		agentSlug,
 		onConversationCreated,
 		onNewChat,
 		onDelete
@@ -49,6 +58,9 @@
 	let error = $state<string | null>(null);
 	let messagesContainer = $state<HTMLDivElement | null>(null);
 	let showScrollButton = $state(false);
+	let thinkingEnabled = $state(false);
+	let webSearchEnabled = $state(false);
+	let uploadedImages = $state<UploadedImage[]>([]);
 
 	// Abort controller for stopping streaming
 	let abortController = $state<AbortController | null>(null);
@@ -77,7 +89,11 @@
 	async function loadModels() {
 		try {
 			const response = await chatApi.getModels();
-			models = response.models;
+			// Filter out image generation and embedding models
+			models = response.models.filter((m: ModelInfo) =>
+				!m.id.toLowerCase().includes('imagen') &&
+				!m.id.toLowerCase().includes('embedding')
+			);
 
 			// Select initial model or default to Gemini 2.5 Flash
 			if (initialModel) {
@@ -98,18 +114,48 @@
 		selectedModel = model;
 	}
 
-	async function handleSend(message: string) {
+	// Helper to convert File to base64
+	async function fileToBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const result = reader.result as string;
+				// Remove data URL prefix (e.g., "data:image/png;base64,")
+				const base64 = result.split(',')[1];
+				resolve(base64);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		});
+	}
+
+	async function handleSend(message: string, images?: UploadedImage[]) {
 		if (!selectedModel || isLoading) return;
+
+		// Convert images to base64 for API
+		let imageDataList: ImageData[] = [];
+		let imagePreviews: string[] = [];
+		if (images && images.length > 0) {
+			imageDataList = await Promise.all(
+				images.map(async (img) => ({
+					media_type: img.file.type,
+					data: await fileToBase64(img.file)
+				}))
+			);
+			imagePreviews = images.map((img) => img.preview);
+		}
 
 		const userMessage: Message = {
 			id: crypto.randomUUID(),
 			role: 'user',
 			content: message,
-			createdAt: new Date()
+			createdAt: new Date(),
+			images: imagePreviews.length > 0 ? imagePreviews : undefined
 		};
 
 		messages = [...messages, userMessage];
 		inputValue = '';
+		uploadedImages = [];
 		isLoading = true;
 		isStreaming = true;
 		streamingContent = '';
@@ -127,7 +173,11 @@
 					message,
 					model: selectedModel.id,
 					conversation_id: conversationId,
-					stream: true
+					agent_slug: agentSlug,
+					stream: true,
+					thinking: thinkingEnabled,
+					web_search: webSearchEnabled,
+					images: imageDataList.length > 0 ? imageDataList : undefined
 				},
 				(content) => {
 					streamingContent += content;
@@ -232,6 +282,7 @@
 					message: lastUserMessage.content,
 					model: selectedModel.id,
 					conversation_id: conversationId,
+					agent_slug: agentSlug,
 					stream: true,
 					skip_user_save: true
 				},
@@ -358,6 +409,7 @@
 						sources={message.sources}
 						usage={message.usage}
 						latency={message.latency}
+						images={message.images}
 						createdAt={message.createdAt}
 						isLastAssistant={isLastAssistantMessage(index)}
 						isLastUser={isLastUserMessage(index)}
@@ -406,6 +458,9 @@
 			bind:value={inputValue}
 			{models}
 			bind:selectedModel
+			bind:thinkingEnabled
+			bind:webSearchEnabled
+			bind:images={uploadedImages}
 			onSubmit={handleSend}
 			onStop={handleStop}
 			onModelSelect={handleModelSelect}

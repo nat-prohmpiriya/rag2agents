@@ -16,11 +16,20 @@ tracer = get_tracer(__name__)
 
 
 @dataclass
+class ImageContent:
+    """Image content for vision models."""
+
+    media_type: str  # e.g., "image/png", "image/jpeg"
+    data: str  # base64 encoded
+
+
+@dataclass
 class ChatMessage:
     """Chat message structure."""
 
     role: str  # system, user, assistant
     content: str
+    images: list[ImageContent] | None = None  # Optional images for vision models
 
 
 @dataclass
@@ -63,9 +72,27 @@ class LLMClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def _format_messages(self, messages: list[ChatMessage]) -> list[dict[str, str]]:
-        """Format messages for API request."""
-        return [{"role": msg.role, "content": msg.content} for msg in messages]
+    def _format_messages(self, messages: list[ChatMessage]) -> list[dict[str, Any]]:
+        """Format messages for API request, including vision content."""
+        formatted = []
+        for msg in messages:
+            if msg.images:
+                # Vision format: content is a list of content blocks
+                content_blocks: list[dict[str, Any]] = [
+                    {"type": "text", "text": msg.content}
+                ]
+                for img in msg.images:
+                    content_blocks.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{img.media_type};base64,{img.data}"
+                        }
+                    })
+                formatted.append({"role": msg.role, "content": content_blocks})
+            else:
+                # Standard text format
+                formatted.append({"role": msg.role, "content": msg.content})
+        return formatted
 
     async def chat_completion(
         self,
@@ -165,6 +192,7 @@ class LLMClient:
         frequency_penalty: float | None = None,
         presence_penalty: float | None = None,
         user: str | None = None,
+        web_search: bool = False,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """
@@ -179,6 +207,7 @@ class LLMClient:
             frequency_penalty: Frequency penalty for token repetition
             presence_penalty: Presence penalty for new topics
             user: User identifier for usage tracking
+            web_search: Enable Google Search grounding for Gemini models
             **kwargs: Additional parameters
 
         Yields:
@@ -204,6 +233,9 @@ class LLMClient:
             payload["frequency_penalty"] = frequency_penalty
         if presence_penalty is not None:
             payload["presence_penalty"] = presence_penalty
+        # Enable Google Search grounding for Gemini models
+        if web_search:
+            payload["tools"] = [{"google_search_retrieval": {}}]
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream(

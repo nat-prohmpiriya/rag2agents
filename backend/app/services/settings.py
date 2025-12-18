@@ -1,5 +1,6 @@
 """Settings service for managing application configuration."""
 
+import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -14,6 +15,8 @@ from app.schemas.admin import (
     NotificationSettings,
     PaymentSettings,
 )
+
+logger = logging.getLogger(__name__)
 
 # Default settings configuration
 DEFAULT_SETTINGS: dict[str, dict[str, Any]] = {

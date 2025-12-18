@@ -95,6 +95,7 @@ async def build_rag_prompt(
 
     # Import here to avoid circular imports
     from sqlalchemy import select
+
     from app.models.document import Document
 
     # Fetch document names for sources

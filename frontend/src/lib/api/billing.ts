@@ -48,14 +48,14 @@ export interface PortalResponse {
  * Get all available billing plans
  */
 export async function getPlans(): Promise<BillingPlan[]> {
-	return fetchApi<BillingPlan[]>('/api/billing/plans');
+	return fetchApi<BillingPlan[]>('/billing/plans');
 }
 
 /**
  * Create a Stripe checkout session for subscribing to a plan
  */
 export async function createCheckout(request: CheckoutRequest): Promise<CheckoutResponse> {
-	return fetchApi<CheckoutResponse>('/api/billing/checkout', {
+	return fetchApi<CheckoutResponse>('/billing/checkout', {
 		method: 'POST',
 		body: JSON.stringify(request)
 	});
@@ -65,7 +65,7 @@ export async function createCheckout(request: CheckoutRequest): Promise<Checkout
  * Create a Stripe customer portal session for managing subscription
  */
 export async function createPortalSession(returnUrl?: string): Promise<PortalResponse> {
-	return fetchApi<PortalResponse>('/api/billing/portal', {
+	return fetchApi<PortalResponse>('/billing/portal', {
 		method: 'POST',
 		body: JSON.stringify({ return_url: returnUrl })
 	});

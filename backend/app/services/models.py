@@ -18,13 +18,6 @@ PROVIDER_METADATA: dict[str, dict[str, str]] = {
         "terms_url": "https://policies.google.com/terms",
         "privacy_url": "https://policies.google.com/privacy",
     },
-    "groq": {
-        "display_name": "Groq",
-        "website_url": "https://groq.com",
-        "pricing_url": "https://groq.com/pricing",
-        "terms_url": "https://groq.com/terms-of-use",
-        "privacy_url": "https://groq.com/privacy-policy",
-    },
     "openai": {
         "display_name": "OpenAI",
         "website_url": "https://openai.com",
@@ -59,8 +52,6 @@ def _format_model_name(model_id: str) -> str:
 
     # Special formatting for known patterns
     name = name.replace("gemini ", "Gemini ")
-    name = name.replace("llama ", "Llama ")
-    name = name.replace("mixtral ", "Mixtral ")
     name = name.replace("gpt ", "GPT-")
     name = name.replace("claude ", "Claude ")
 

@@ -199,7 +199,7 @@
 	<!-- Thumbnails Sidebar -->
 	<div
 		bind:this={thumbnailContainer}
-		class="w-32 shrink-0 overflow-y-auto border-r bg-background p-2 hidden md:block"
+		class="w-20 shrink-0 overflow-y-auto border-r bg-background p-2 hidden md:block"
 	>
 		<div class="space-y-2">
 			{#each thumbnails as thumb (thumb.page)}

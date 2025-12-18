@@ -1,5 +1,6 @@
 """Audit log service for tracking admin actions."""
 
+import logging
 import uuid
 from datetime import datetime
 
@@ -10,6 +11,8 @@ from sqlalchemy.orm import joinedload
 from app.core.telemetry import traced
 from app.models.audit_log import AuditLog
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 @traced()

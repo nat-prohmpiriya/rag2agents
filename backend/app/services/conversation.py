@@ -1,5 +1,6 @@
 """Conversation service for managing chat history."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 
@@ -8,8 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.telemetry import traced
 from app.models.conversation import Conversation
 from app.models.message import Message, MessageRole
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -24,6 +28,7 @@ class SearchResult:
     created_at: str
 
 
+@traced()
 async def list_conversations(
     db: AsyncSession,
     user_id: uuid.UUID,
@@ -94,6 +99,7 @@ async def get_last_message_preview(
     return None
 
 
+@traced()
 async def create_conversation(
     db: AsyncSession,
     user_id: uuid.UUID,
@@ -109,9 +115,16 @@ async def create_conversation(
     db.add(conversation)
     await db.flush()
     await db.refresh(conversation)
+
+    logger.info("Conversation created", extra={
+        "conversation_id": str(conversation.id),
+        "user_id": str(user_id),
+        "project_id": str(project_id) if project_id else None,
+    })
     return conversation
 
 
+@traced()
 async def get_conversation(
     db: AsyncSession,
     conversation_id: uuid.UUID,
@@ -189,6 +202,7 @@ async def update_conversation(
     return conversation
 
 
+@traced()
 async def delete_conversation(
     db: AsyncSession,
     conversation_id: uuid.UUID,
@@ -204,6 +218,11 @@ async def delete_conversation(
     conversation = await get_conversation_simple(db, conversation_id, user_id)
     await db.delete(conversation)
     await db.flush()
+
+    logger.info("Conversation deleted", extra={
+        "conversation_id": str(conversation_id),
+        "user_id": str(user_id),
+    })
     return True
 
 
@@ -217,6 +236,7 @@ def generate_title_from_message(content: str, max_length: int = 50) -> str:
     return title
 
 
+@traced(skip_output=True)  # Skip output to avoid logging large content
 async def add_message(
     db: AsyncSession,
     conversation_id: uuid.UUID,
@@ -280,6 +300,7 @@ async def get_conversation_messages(
     return list(result.scalars().all())
 
 
+@traced()
 async def search_conversations(
     db: AsyncSession,
     user_id: uuid.UUID,

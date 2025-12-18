@@ -7,9 +7,9 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2, Bell, Sparkles } from 'lucide-svelte';
-	import { chatStore, type Conversation } from '$lib/stores';
-	import { NotificationBell } from '$lib/components/notifications';
+	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2, Bell, Sparkles, Workflow } from 'lucide-svelte';
+	import { chatStore, type Conversation, notificationStore } from '$lib/stores';
+	import * as m from '$lib/paraglide/messages';
 
 	let {
 		collapsed = false,
@@ -29,14 +29,17 @@
 		icon: typeof MessageSquare;
 	}
 
-	const navItems: NavItem[] = [
-		{ label: 'New Chat', href: '/chat', icon: MessageSquarePlus },
-		{ label: 'Chats', href: '/chats', icon: MessageSquare },
-		{ label: 'Images', href: '/images', icon: Image },
-		{ label: 'Documents', href: '/documents', icon: FileText },
-		{ label: 'Projects', href: '/projects', icon: Folder },
-		{ label: 'Agents', href: '/agents', icon: Bot },
-	];
+	// navItems needs to be derived to react to locale changes
+	let navItems = $derived<NavItem[]>([
+		{ label: m.nav_new_chat(), href: '/chat', icon: MessageSquarePlus },
+		{ label: m.nav_chats(), href: '/chats', icon: MessageSquare },
+		{ label: m.nav_images(), href: '/images', icon: Image },
+		{ label: m.nav_documents(), href: '/documents', icon: FileText },
+		{ label: m.nav_projects(), href: '/projects', icon: Folder },
+		{ label: m.nav_agents(), href: '/agents', icon: Bot },
+		{ label: 'Workflows', href: '/workflows', icon: Workflow },
+		{ label: m.nav_notifications(), href: '/notifications', icon: Bell },
+	]);
 
 	let chatHistoryContainer = $state<HTMLDivElement | null>(null);
 	let hoveredChatId = $state<string | null>(null);
@@ -73,7 +76,7 @@
 				? conv.last_message_preview.substring(0, 25) + '...'
 				: conv.last_message_preview;
 		}
-		return 'New conversation';
+		return m.sidebar_new_conversation();
 	}
 
 	async function handleDeleteChat(e: MouseEvent, id: string) {
@@ -140,6 +143,8 @@
 		<nav class="flex flex-col gap-1">
 			{#each navItems as item}
 				{@const Icon = item.icon}
+				{@const isNotification = item.href === '/notifications'}
+				{@const unreadCount = isNotification ? notificationStore.unreadCount : 0}
 				{#if collapsed}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -147,19 +152,27 @@
 								<a
 									{...props}
 									href={item.href}
-									class="flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+									class="relative flex items-center justify-center rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
 										item.href
 									)
 										? 'bg-accent text-accent-foreground'
 										: ''}"
 								>
 									<Icon class="h-5 w-5" />
+									{#if isNotification && unreadCount > 0}
+										<span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+											{unreadCount > 9 ? '9+' : unreadCount}
+										</span>
+									{/if}
 								</a>
 							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Portal>
 							<Tooltip.Content side="right">
 								{item.label}
+								{#if isNotification && unreadCount > 0}
+									<span class="ml-1 text-muted-foreground">({unreadCount})</span>
+								{/if}
 							</Tooltip.Content>
 						</Tooltip.Portal>
 					</Tooltip.Root>
@@ -172,8 +185,20 @@
 							? 'bg-accent text-accent-foreground'
 							: ''}"
 					>
-						<Icon class="h-4 w-4" />
+						<div class="relative">
+							<Icon class="h-4 w-4" />
+							{#if isNotification && unreadCount > 0}
+								<span class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[8px] font-medium text-destructive-foreground">
+									{unreadCount > 9 ? '!' : unreadCount}
+								</span>
+							{/if}
+						</div>
 						{item.label}
+						{#if isNotification && unreadCount > 0}
+							<span class="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium text-destructive-foreground">
+								{unreadCount > 99 ? '99+' : unreadCount}
+							</span>
+						{/if}
 					</a>
 				{/if}
 			{/each}
@@ -183,7 +208,7 @@
 	<!-- Chat History (only when expanded) -->
 	{#if !collapsed}
 		<div class="flex items-center justify-between px-4 py-2">
-			<span class="text-xs font-medium text-muted-foreground">Recent Chats</span>
+			<span class="text-xs font-medium text-muted-foreground">{m.sidebar_recent_chats()}</span>
 			{#if chatStore.loading}
 				<Loader2 class="h-3 w-3 animate-spin text-muted-foreground" />
 			{/if}
@@ -205,7 +230,7 @@
 					class="flex flex-col items-center justify-center py-4 text-center text-muted-foreground"
 				>
 					<MessageSquare class="mb-2 h-6 w-6 opacity-50" />
-					<p class="text-xs">No chats yet</p>
+					<p class="text-xs">{m.sidebar_no_chats()}</p>
 				</div>
 			{:else}
 				<div class="space-y-0.5">
@@ -244,24 +269,9 @@
 		</div>
 	{/if}
 
-	<!-- Notification & User Avatar & Toggle button -->
+	<!-- User Avatar & Toggle button -->
 	<div class="mt-auto p-2">
 		{#if collapsed}
-			<!-- Collapsed: Notification bell -->
-			{#if user}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<div {...props} class="flex justify-center mb-1">
-								<NotificationBell />
-							</div>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Portal>
-						<Tooltip.Content side="right">Notifications</Tooltip.Content>
-					</Tooltip.Portal>
-				</Tooltip.Root>
-			{/if}
 			<!-- Collapsed: User avatar icon -->
 			{#if user}
 				<Tooltip.Root>
@@ -306,19 +316,19 @@
 									<DropdownMenu.Item>
 										<a href="/settings" class="flex items-center">
 											<Settings class="mr-2 h-4 w-4" />
-											Settings
+											{m.nav_settings()}
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item>
 										<a href="/settings?tab=billing" class="flex items-center text-primary">
 											<Sparkles class="mr-2 h-4 w-4" />
-											Upgrade Plan
+											{m.nav_upgrade_plan()}
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={onLogout}>
 										<LogOut class="mr-2 h-4 w-4" />
-										Log out
+										{m.nav_logout()}
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
@@ -346,17 +356,11 @@
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Portal>
-					<Tooltip.Content side="right">Expand sidebar</Tooltip.Content>
+					<Tooltip.Content side="right">{m.nav_expand_sidebar()}</Tooltip.Content>
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		{:else}
-			<!-- Expanded: Notification + User info + logout -->
-			{#if user}
-				<div class="flex items-center gap-2 px-3 py-2 mb-1">
-					<NotificationBell />
-					<span class="text-sm text-muted-foreground">Notifications</span>
-				</div>
-			{/if}
+			<!-- Expanded: User info + logout -->
 			{#if user}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
@@ -386,26 +390,26 @@
 						<DropdownMenu.Item class="cursor-pointer">
 							<a href="/settings" class="flex items-center">
 								<Settings class="mr-2 h-4 w-4" />
-								Settings
+								{m.nav_settings()}
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Item class="cursor-pointer">
 							<a href="/settings?tab=billing" class="flex items-center text-primary">
 								<Sparkles class="mr-2 h-4 w-4" />
-								Upgrade Plan
+								{m.nav_upgrade_plan()}
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={onLogout}>
 							<LogOut class="mr-2 h-4 w-4" />
-							Log out
+							{m.nav_logout()}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{/if}
 			<Button variant="ghost" class="w-full justify-start mt-2" onclick={onToggle}>
 				<ChevronLeft class="mr-2 h-4 w-4" />
-				Collapse
+				{m.nav_collapse()}
 			</Button>
 		{/if}
 	</div>

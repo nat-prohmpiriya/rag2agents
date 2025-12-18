@@ -1,9 +1,10 @@
-"""OpenTelemetry setup and utilities."""
+"""OpenTelemetry setup and utilities for tracing, logging, and metrics."""
 
 import json
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from app.config import settings
 
@@ -11,6 +12,36 @@ logger = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
+# Module-level variables for lazy initialization
+_tracer = None
+_meter = None
+_resource = None
+
+# Metrics instruments (initialized lazily)
+_http_request_counter = None
+_http_request_duration = None
+
+
+def _get_resource():
+    """Get shared OpenTelemetry resource."""
+    global _resource
+    if _resource is not None:
+        return _resource
+
+    try:
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
+        _resource = Resource(
+            attributes={
+                SERVICE_NAME: settings.otel_service_name,
+                "service.version": "0.1.0",
+                "deployment.environment": settings.app_env,
+            }
+        )
+        return _resource
+    except ImportError:
+        return None
 
 
 def setup_telemetry() -> None:
@@ -24,18 +55,13 @@ def setup_telemetry() -> None:
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
             OTLPSpanExporter,
         )
-        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-        # Create resource with service info
-        resource = Resource(
-            attributes={
-                SERVICE_NAME: settings.otel_service_name,
-                "service.version": "0.1.0",
-                "deployment.environment": settings.app_env,
-            }
-        )
+        resource = _get_resource()
+        if resource is None:
+            logger.warning("Failed to create resource, tracing disabled")
+            return
 
         # Setup tracer provider
         provider = TracerProvider(resource=resource)
@@ -43,7 +69,7 @@ def setup_telemetry() -> None:
         # Configure OTLP exporter
         otlp_exporter = OTLPSpanExporter(
             endpoint=settings.otel_exporter_endpoint,
-            insecure=True,  # Use False in production with TLS
+            insecure=True,
         )
 
         # Add span processor
@@ -53,13 +79,150 @@ def setup_telemetry() -> None:
         trace.set_tracer_provider(provider)
 
         logger.info(
-            f"OpenTelemetry initialized: service={settings.otel_service_name}, "
+            f"OpenTelemetry tracing initialized: service={settings.otel_service_name}, "
             f"endpoint={settings.otel_exporter_endpoint}"
         )
     except ImportError:
-        logger.warning("OpenTelemetry packages not installed, tracing disabled")
+        logger.warning("OpenTelemetry tracing packages not installed")
     except Exception as e:
-        logger.error(f"Failed to initialize OpenTelemetry: {e}")
+        logger.error(f"Failed to initialize OpenTelemetry tracing: {e}")
+
+
+def setup_logging() -> None:
+    """Initialize OpenTelemetry logging with OTLP export."""
+    if not settings.otel_enabled:
+        return
+
+    try:
+        from opentelemetry._logs import set_logger_provider
+        from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+            OTLPLogExporter,
+        )
+        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
+        resource = _get_resource()
+        if resource is None:
+            logger.warning("Failed to create resource, logging export disabled")
+            return
+
+        # Setup logger provider
+        logger_provider = LoggerProvider(resource=resource)
+        set_logger_provider(logger_provider)
+
+        # Configure OTLP exporter for logs
+        log_exporter = OTLPLogExporter(
+            endpoint=settings.otel_exporter_endpoint,
+            insecure=True,
+        )
+
+        # Add log record processor
+        logger_provider.add_log_record_processor(
+            BatchLogRecordProcessor(log_exporter)
+        )
+
+        # Get log level from config
+        log_level = getattr(logging, settings.otel_log_level.upper(), logging.INFO)
+
+        # Add handler to root logger
+        handler = LoggingHandler(
+            level=log_level,
+            logger_provider=logger_provider,
+        )
+        logging.getLogger().addHandler(handler)
+
+        logger.info("OpenTelemetry logging initialized")
+    except ImportError:
+        logger.warning("OpenTelemetry logging packages not installed")
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenTelemetry logging: {e}")
+
+
+def setup_metrics() -> None:
+    """Initialize OpenTelemetry metrics with OTLP export."""
+    global _meter, _http_request_counter, _http_request_duration
+
+    if not settings.otel_enabled:
+        return
+
+    try:
+        from opentelemetry import metrics
+        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+            OTLPMetricExporter,
+        )
+        from opentelemetry.sdk.metrics import MeterProvider
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+        resource = _get_resource()
+        if resource is None:
+            logger.warning("Failed to create resource, metrics disabled")
+            return
+
+        # Configure OTLP exporter for metrics
+        metric_exporter = OTLPMetricExporter(
+            endpoint=settings.otel_exporter_endpoint,
+            insecure=True,
+        )
+
+        # Create periodic metric reader
+        metric_reader = PeriodicExportingMetricReader(
+            metric_exporter,
+            export_interval_millis=settings.otel_metrics_export_interval_ms,
+        )
+
+        # Setup meter provider
+        provider = MeterProvider(
+            resource=resource,
+            metric_readers=[metric_reader],
+        )
+        metrics.set_meter_provider(provider)
+
+        # Initialize meter
+        _meter = metrics.get_meter(settings.otel_service_name, "0.1.0")
+
+        # Create HTTP metrics instruments
+        _http_request_counter = _meter.create_counter(
+            name="http_requests_total",
+            description="Total number of HTTP requests",
+            unit="1",
+        )
+
+        _http_request_duration = _meter.create_histogram(
+            name="http_request_duration_seconds",
+            description="HTTP request duration in seconds",
+            unit="s",
+        )
+
+        logger.info("OpenTelemetry metrics initialized")
+    except ImportError:
+        logger.warning("OpenTelemetry metrics packages not installed")
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenTelemetry metrics: {e}")
+
+
+def get_http_request_counter():
+    """Get HTTP request counter metric."""
+    return _http_request_counter
+
+
+def get_http_request_duration():
+    """Get HTTP request duration histogram metric."""
+    return _http_request_duration
+
+
+def get_meter(name: str | None = None):
+    """
+    Get a meter instance for creating custom metrics.
+
+    Args:
+        name: Optional meter name. Defaults to service name.
+
+    Returns:
+        Meter instance or None if metrics disabled.
+    """
+    if not settings.otel_enabled or _meter is None:
+        return None
+    return _meter
 
 
 def instrument_app(app) -> None:
@@ -82,6 +245,22 @@ def instrument_app(app) -> None:
         logger.warning("OpenTelemetry instrumentation packages not installed")
     except Exception as e:
         logger.error(f"Failed to instrument app: {e}")
+
+
+def instrument_redis() -> None:
+    """Instrument Redis with OpenTelemetry."""
+    if not settings.otel_enabled:
+        return
+
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+
+        RedisInstrumentor().instrument()
+        logger.info("Redis instrumented with OpenTelemetry")
+    except ImportError:
+        logger.warning("Redis instrumentation package not installed")
+    except Exception as e:
+        logger.error(f"Failed to instrument Redis: {e}")
 
 
 def instrument_database(engine) -> None:

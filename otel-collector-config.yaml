@@ -1,0 +1,68 @@
+# OpenTelemetry Collector Configuration
+# Receives telemetry from the backend and exports to various backends
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: service.namespace
+        value: rag-agent-platform
+        action: upsert
+
+exporters:
+  # Traces -> Jaeger
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Logs -> stdout (can be replaced with Loki, etc.)
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # Metrics -> Prometheus (scrape endpoint)
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: rag_agent
+    const_labels:
+      environment: development
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [otlp/jaeger]
+    logs:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info

@@ -25,20 +25,28 @@ dependencies = [
     "stripe>=11.0.0",
     # Redis
     "redis>=5.0.0",
+    # Rate Limiting
+    "slowapi>=0.1.9",
     # Utils
     "python-multipart>=0.0.12",
     "aiofiles>=24.1.0",
     # Document Processing
     "pymupdf>=1.24.0",
     "python-docx>=1.1.0",
+    # Storage
+    "minio>=7.2.0",
     # Embeddings (using LiteLLM API - no local model needed)
-    # OpenTelemetry
+    # OpenTelemetry - Tracing
     "opentelemetry-api>=1.27.0",
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.48b0",
     "opentelemetry-instrumentation-httpx>=0.48b0",
     "opentelemetry-exporter-otlp>=1.27.0",
+    # OpenTelemetry - Logging
+    "opentelemetry-instrumentation-logging>=0.48b0",
+    # OpenTelemetry - Redis
+    "opentelemetry-instrumentation-redis>=0.48b0",
 ]
 
 [project.optional-dependencies]

@@ -1,9 +1,12 @@
 """Summarize tool for condensing text content."""
 
+import logging
 from typing import Any
 
 from app.agents.tools.base import BaseTool, ToolResult
 from app.providers.llm import ChatMessage, llm_client
+
+logger = logging.getLogger(__name__)
 
 
 class SummarizeTool(BaseTool):

@@ -7,6 +7,7 @@
 	import DocumentUpload from '$lib/components/documents/DocumentUpload.svelte';
 	import DocumentCard from '$lib/components/documents/DocumentCard.svelte';
 	import DocumentEditDialog from '$lib/components/documents/DocumentEditDialog.svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	type StatusFilter = 'all' | DocumentStatus;
 
@@ -20,13 +21,14 @@
 	let editDialogOpen = $state(false);
 	let editingDocument = $state<Document | null>(null);
 
-	const filterOptions: { value: StatusFilter; label: string }[] = [
-		{ value: 'all', label: 'All' },
-		{ value: 'ready', label: 'Ready' },
-		{ value: 'processing', label: 'Processing' },
-		{ value: 'pending', label: 'Pending' },
-		{ value: 'error', label: 'Error' }
-	];
+	// Derived filter options for i18n reactivity
+	let filterOptions = $derived<{ value: StatusFilter; label: string }[]>([
+		{ value: 'all', label: m.common_all() },
+		{ value: 'ready', label: m.documents_status_ready() },
+		{ value: 'processing', label: m.documents_status_processing() },
+		{ value: 'pending', label: m.documents_status_pending() },
+		{ value: 'error', label: m.documents_status_error() }
+	]);
 
 	let filteredDocuments = $derived(() => {
 		let result = documents;
@@ -124,7 +126,7 @@
 </script>
 
 <svelte:head>
-	<title>Documents | RAG Agent</title>
+	<title>{m.documents_page_title()}</title>
 </svelte:head>
 
 <div class="flex h-full flex-col">
@@ -135,10 +137,10 @@
 			<div class="flex items-center justify-between mb-6">
 				<div class="flex items-center gap-3">
 					<FileText class="size-8 text-foreground" />
-					<h1 class="text-3xl font-semibold text-foreground">Documents</h1>
+					<h1 class="text-3xl font-semibold text-foreground">{m.documents_title()}</h1>
 				</div>
 				{#if documents.length > 0}
-					<span class="text-sm text-muted-foreground">{documents.length} documents</span>
+					<span class="text-sm text-muted-foreground">{m.documents_count({ count: documents.length })}</span>
 				{/if}
 			</div>
 
@@ -149,7 +151,7 @@
 				/>
 				<Input
 					type="search"
-					placeholder="Search documents..."
+					placeholder={m.documents_search_placeholder()}
 					class="pl-12 h-12 bg-white border-border rounded-lg text-base"
 					bind:value={searchQuery}
 				/>
@@ -158,10 +160,10 @@
 			<!-- Filter -->
 			<div class="flex justify-end mb-4">
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
-					<span>Filter by</span>
+					<span>{m.common_filter_by()}</span>
 					<Select.Root type="single" onValueChange={handleFilterChange}>
 						<Select.Trigger class="w-32 h-8">
-							<span>{filterOptions.find((o) => o.value === statusFilter)?.label || 'All'}</span>
+							<span>{filterOptions.find((o) => o.value === statusFilter)?.label || m.common_all()}</span>
 						</Select.Trigger>
 						<Select.Content align="end">
 							{#each filterOptions as option}
@@ -194,12 +196,12 @@
 				{#if filteredDocuments().length === 0 && (searchQuery || statusFilter !== 'all')}
 					<div class="mt-8 rounded-lg bg-white border border-border flex flex-col items-center p-12">
 						<FileText class="size-12 text-muted-foreground/50" />
-						<h3 class="mt-4 text-lg font-medium">No documents found</h3>
+						<h3 class="mt-4 text-lg font-medium">{m.documents_no_documents()}</h3>
 						<p class="mt-1 text-sm text-muted-foreground">
 							{#if searchQuery}
-								No documents matching "{searchQuery}".
+								{m.documents_no_match({ query: searchQuery })}
 							{:else}
-								No documents with status "{statusFilter}".
+								{m.documents_no_status({ status: statusFilter })}
 							{/if}
 						</p>
 					</div>
@@ -208,7 +210,7 @@
 				<!-- Processing indicator -->
 				{#if hasProcessingDocuments}
 					<p class="mt-4 text-center text-xs text-muted-foreground">
-						Auto-refreshing while documents are processing...
+						{m.documents_auto_refresh()}
 					</p>
 				{/if}
 			{/if}

@@ -23,3 +23,15 @@ export {
 	type NotificationListParams
 } from './notifications';
 export * from './admin';
+export * as imagesApi from './images';
+export type {
+	ImageModel,
+	ImageSize,
+	ImageData,
+	ImageGenerateRequest,
+	ImageGenerateResponse,
+	ImageModelsResponse,
+	ImageSizesResponse,
+	ImageHistoryItem,
+	ImageHistoryResponse
+} from './images';

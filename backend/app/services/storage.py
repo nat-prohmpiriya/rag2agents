@@ -1,5 +1,6 @@
 """File storage service with abstract interface and implementations."""
 
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -9,6 +10,8 @@ import aiofiles.os
 
 from app.config import settings
 from app.core.telemetry import traced
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService(ABC):
@@ -69,6 +72,12 @@ class StorageService(ABC):
         pass
 
 
+class PathTraversalError(Exception):
+    """Raised when a path traversal attack is detected."""
+
+    pass
+
+
 class LocalStorageService(StorageService):
     """Local filesystem storage implementation."""
 
@@ -79,7 +88,33 @@ class LocalStorageService(StorageService):
         Args:
             base_path: Base directory for file storage (defaults to settings)
         """
-        self.base_path = Path(base_path or settings.storage_local_path)
+        self.base_path = Path(base_path or settings.storage_local_path).resolve()
+
+    def _validate_path(self, path: str) -> Path:
+        """
+        Validate that the path is within the base directory.
+
+        Args:
+            path: Relative path to validate
+
+        Returns:
+            Resolved absolute path
+
+        Raises:
+            PathTraversalError: If path attempts to escape base directory
+        """
+        # Normalize and resolve the full path
+        full_path = (self.base_path / path).resolve()
+
+        # Check if the resolved path is within base_path
+        try:
+            full_path.relative_to(self.base_path)
+        except ValueError as err:
+            raise PathTraversalError(
+                f"Path traversal detected: '{path}' escapes base directory"
+            ) from err
+
+        return full_path
 
     async def _ensure_directory(self, path: Path) -> None:
         """Ensure directory exists, create if not."""
@@ -108,7 +143,7 @@ class LocalStorageService(StorageService):
     @traced()
     async def download(self, path: str) -> bytes:
         """Download file from local filesystem."""
-        file_path = self.base_path / path
+        file_path = self._validate_path(path)
 
         if not await aiofiles.os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {path}")
@@ -119,7 +154,7 @@ class LocalStorageService(StorageService):
     @traced()
     async def delete(self, path: str) -> bool:
         """Delete file from local filesystem."""
-        file_path = self.base_path / path
+        file_path = self._validate_path(path)
 
         if not await aiofiles.os.path.exists(file_path):
             return False
@@ -130,7 +165,7 @@ class LocalStorageService(StorageService):
     @traced()
     async def exists(self, path: str) -> bool:
         """Check if file exists in local filesystem."""
-        file_path = self.base_path / path
+        file_path = self._validate_path(path)
         return await aiofiles.os.path.exists(file_path)
 
 

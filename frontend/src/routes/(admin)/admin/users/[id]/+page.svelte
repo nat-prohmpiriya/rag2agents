@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Card } from '$lib/components/ui/card';
@@ -11,6 +12,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Table from '$lib/components/ui/table';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import {
 		ArrowLeft,
 		Mail,
@@ -46,6 +48,21 @@
 	let plans = $state<Plan[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+
+	// Confirmation dialog state
+	let confirmDialog = $state<{
+		open: boolean;
+		title: string;
+		description: string;
+		variant: 'default' | 'destructive';
+		action: () => Promise<void>;
+	}>({
+		open: false,
+		title: '',
+		description: '',
+		variant: 'default',
+		action: async () => {}
+	});
 
 	const userId = $derived($page.params.id);
 
@@ -132,62 +149,96 @@
 		}
 	}
 
-	async function handleSuspend() {
-		if (!user) return;
-		if (!confirm('Are you sure you want to suspend this user?')) return;
+	function openConfirmDialog(
+		title: string,
+		description: string,
+		variant: 'default' | 'destructive',
+		action: () => Promise<void>
+	) {
+		confirmDialog = { open: true, title, description, variant, action };
+	}
 
+	async function executeConfirmAction() {
 		try {
-			await suspendUser(user.id);
-			await loadData();
-		} catch (e) {
-			alert('Failed to suspend user');
+			await confirmDialog.action();
+		} finally {
+			confirmDialog.open = false;
 		}
+	}
+
+	function handleSuspend() {
+		if (!user) return;
+		openConfirmDialog(
+			'Suspend User',
+			'Are you sure you want to suspend this user?',
+			'default',
+			async () => {
+				try {
+					await suspendUser(user!.id);
+					await loadData();
+					toast.success('User suspended successfully');
+				} catch (e) {
+					toast.error('Failed to suspend user');
+				}
+			}
+		);
 	}
 
 	async function handleActivate() {
 		if (!user) return;
-
 		try {
 			await activateUser(user.id);
 			await loadData();
+			toast.success('User activated successfully');
 		} catch (e) {
-			alert('Failed to activate user');
+			toast.error('Failed to activate user');
 		}
 	}
 
-	async function handleBan() {
+	function handleBan() {
 		if (!user) return;
-		if (!confirm('Are you sure you want to ban this user? This action is severe.')) return;
-
-		try {
-			await banUser(user.id);
-			await loadData();
-		} catch (e) {
-			alert('Failed to ban user');
-		}
+		openConfirmDialog(
+			'Ban User',
+			'Are you sure you want to ban this user? This action is severe.',
+			'destructive',
+			async () => {
+				try {
+					await banUser(user!.id);
+					await loadData();
+					toast.success('User banned successfully');
+				} catch (e) {
+					toast.error('Failed to ban user');
+				}
+			}
+		);
 	}
 
-	async function handleDelete() {
+	function handleDelete() {
 		if (!user) return;
-		if (!confirm('Are you sure you want to DELETE this user? This action cannot be undone.'))
-			return;
-
-		try {
-			await deleteUser(user.id);
-			goto('/admin/users');
-		} catch (e) {
-			alert('Failed to delete user');
-		}
+		openConfirmDialog(
+			'Delete User',
+			'Are you sure you want to DELETE this user? This action cannot be undone.',
+			'destructive',
+			async () => {
+				try {
+					await deleteUser(user!.id);
+					toast.success('User deleted successfully');
+					goto('/admin/users');
+				} catch (e) {
+					toast.error('Failed to delete user');
+				}
+			}
+		);
 	}
 
 	async function handleChangePlan(planId: string) {
 		if (!user) return;
-
 		try {
 			await changeUserPlan(user.id, planId);
 			await loadData();
+			toast.success('Plan changed successfully');
 		} catch (e) {
-			alert('Failed to change plan');
+			toast.error('Failed to change plan');
 		}
 	}
 
@@ -609,3 +660,22 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Confirmation Dialog -->
+<AlertDialog.Root bind:open={confirmDialog.open}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>{confirmDialog.title}</AlertDialog.Title>
+			<AlertDialog.Description>{confirmDialog.description}</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action
+				onclick={executeConfirmAction}
+				class={confirmDialog.variant === 'destructive' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+			>
+				Confirm
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

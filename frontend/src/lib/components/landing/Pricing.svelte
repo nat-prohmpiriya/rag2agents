@@ -28,7 +28,7 @@
         "5 AI Agents",
         "100 Documents",
         "10,000 queries/month",
-        "GPT-4, Gemini, Groq",
+        "Google Gemini Models",
         "Custom Tools",
         "Priority Support",
         "API Access"

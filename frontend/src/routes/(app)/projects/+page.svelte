@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { projectsApi, type ProjectDetail, type ProjectCreate, type ProjectUpdate } from '$lib/api';
 	import ProjectDialog from '$lib/components/projects/ProjectDialog.svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	let projects = $state<ProjectDetail[]>([]);
 	let loading = $state(true);
@@ -89,23 +90,24 @@
 		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 		const months = Math.floor(days / 30);
 
-		if (days === 0) return 'Updated today';
-		if (days === 1) return 'Updated yesterday';
-		if (days < 7) return `Updated ${days} days ago`;
-		if (months === 1) return 'Updated 1 month ago';
-		if (months < 12) return `Updated ${months} months ago`;
+		if (days === 0) return m.projects_updated_today();
+		if (days === 1) return m.projects_updated_yesterday();
+		if (days < 7) return m.projects_updated_days_ago({ count: days });
+		if (months === 1) return m.projects_updated_month_ago();
+		if (months < 12) return m.projects_updated_months_ago({ count: months });
 		return `Updated ${date.toLocaleDateString()}`;
 	}
 
-	const sortLabels = {
-		activity: 'Activity',
-		name: 'Name',
-		created: 'Created'
-	};
+	// Derived for i18n reactivity
+	let sortLabels = $derived({
+		activity: m.projects_sort_activity(),
+		name: m.projects_sort_name(),
+		created: m.projects_sort_created()
+	});
 </script>
 
 <svelte:head>
-	<title>Projects | RAG Agent</title>
+	<title>{m.projects_page_title()}</title>
 </svelte:head>
 
 <div class="flex h-full flex-col">
@@ -116,11 +118,11 @@
 			<div class="flex items-center justify-between mb-6">
 				<div class="flex items-center gap-3">
 					<FolderKanban class="size-8 text-foreground" />
-					<h1 class="text-3xl font-semibold text-foreground">Projects</h1>
+					<h1 class="text-3xl font-semibold text-foreground">{m.projects_title()}</h1>
 				</div>
 				<Button onclick={() => (showCreateDialog = true)}>
 					<Plus class="mr-2 size-4" />
-					New project
+					{m.projects_new_project()}
 				</Button>
 			</div>
 
@@ -131,7 +133,7 @@
 				/>
 				<Input
 					type="search"
-					placeholder="Search projects..."
+					placeholder={m.projects_search_placeholder()}
 					class="pl-12 h-12 bg-white border-border rounded-lg text-base"
 					bind:value={searchQuery}
 				/>
@@ -140,7 +142,7 @@
 			<!-- Sort -->
 			<div class="flex justify-end mb-4">
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
-					<span>Sort by</span>
+					<span>{m.common_sort_by()}</span>
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
@@ -152,13 +154,13 @@
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end">
 							<DropdownMenu.Item onclick={() => (sortBy = 'activity')}
-								>Activity</DropdownMenu.Item
+								>{m.projects_sort_activity()}</DropdownMenu.Item
 							>
 							<DropdownMenu.Item onclick={() => (sortBy = 'name')}
-								>Name</DropdownMenu.Item
+								>{m.projects_sort_name()}</DropdownMenu.Item
 							>
 							<DropdownMenu.Item onclick={() => (sortBy = 'created')}
-								>Created</DropdownMenu.Item
+								>{m.projects_sort_created()}</DropdownMenu.Item
 							>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
@@ -175,17 +177,17 @@
 				<div
 					class="rounded-lg bg-white border border-border flex flex-col items-center p-12"
 				>
-					<h3 class="text-lg font-medium">No projects</h3>
+					<h3 class="text-lg font-medium">{m.projects_no_projects()}</h3>
 					<p class="mt-1 text-sm text-muted-foreground">
 						{#if searchQuery}
-							No projects matching "{searchQuery}". Try a different search.
+							{m.projects_no_match({ query: searchQuery })}
 						{:else}
-							Create your first project to organize documents and conversations.
+							{m.projects_empty_hint()}
 						{/if}
 					</p>
 					<Button class="mt-4" onclick={() => (showCreateDialog = true)}>
 						<Plus class="mr-2 size-4" />
-						Create Project
+						{m.projects_create_project()}
 					</Button>
 				</div>
 			{:else}

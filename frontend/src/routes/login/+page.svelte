@@ -10,6 +10,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { auth } from '$lib/stores';
 	import { ApiException } from '$lib/types';
+	import * as m from '$lib/paraglide/messages';
 
 	const REMEMBER_EMAIL_KEY = 'rag_remember_email';
 
@@ -48,7 +49,7 @@
 			if (err instanceof ApiException) {
 				error = err.message;
 			} else {
-				error = 'An unexpected error occurred. Please try again.';
+				error = m.common_error_unexpected();
 			}
 		} finally {
 			isLoading = false;
@@ -61,15 +62,15 @@
 </script>
 
 <svelte:head>
-	<title>Login - RAG Agent Platform</title>
+	<title>{m.auth_page_title()}</title>
 </svelte:head>
 
 <div class="min-h-screen flex items-center justify-center bg-background px-4">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="space-y-1">
-			<Card.Title class="text-2xl font-bold text-center">Welcome back</Card.Title>
+			<Card.Title class="text-2xl font-bold text-center">{m.auth_login_title()}</Card.Title>
 			<Card.Description class="text-center">
-				Enter your credentials to access your account
+				{m.auth_login_description()}
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
@@ -81,11 +82,11 @@
 				{/if}
 
 				<div class="space-y-2">
-					<Label for="email">Email</Label>
+					<Label for="email">{m.auth_email()}</Label>
 					<Input
 						id="email"
 						type="email"
-						placeholder="name@example.com"
+						placeholder={m.auth_email_placeholder()}
 						bind:value={email}
 						required
 						disabled={isLoading}
@@ -94,16 +95,16 @@
 
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
-						<Label for="password">Password</Label>
+						<Label for="password">{m.auth_password()}</Label>
 						<a href="/forgot-password" class="text-sm text-primary hover:underline">
-							Forgot password?
+							{m.auth_forgot_password()}
 						</a>
 					</div>
 					<div class="relative">
 						<Input
 							id="password"
 							type={showPassword ? 'text' : 'password'}
-							placeholder="Enter your password"
+							placeholder={m.auth_password_placeholder()}
 							bind:value={password}
 							required
 							disabled={isLoading}
@@ -131,7 +132,7 @@
 						disabled={isLoading}
 					/>
 					<Label for="remember" class="text-sm font-normal cursor-pointer">
-						Remember my email
+						{m.auth_remember_email()}
 					</Label>
 				</div>
 
@@ -141,9 +142,9 @@
 							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
 							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 						</svg>
-						Signing in...
+						{m.auth_signing_in()}
 					{:else}
-						Sign in
+						{m.auth_sign_in()}
 					{/if}
 				</Button>
 			</form>
@@ -154,13 +155,13 @@
 					<span class="w-full border-t"></span>
 				</div>
 				<div class="relative flex justify-center text-xs uppercase">
-					<span class="bg-background px-2 text-muted-foreground">Or</span>
+					<span class="bg-background px-2 text-muted-foreground">{m.common_or()}</span>
 				</div>
 			</div>
 			<p class="text-center text-sm text-muted-foreground">
-				Don't have an account?
+				{m.auth_no_account()}
 				<a href="/register" class="text-primary hover:underline font-medium">
-					Sign up
+					{m.auth_sign_up()}
 				</a>
 			</p>
 		</Card.Footer>

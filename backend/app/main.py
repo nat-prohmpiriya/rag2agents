@@ -5,12 +5,21 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.core.context import get_context
+from app.core.database import instrument_database_engine
 from app.core.exceptions import AppException
-from app.core.telemetry import instrument_app, setup_telemetry
-from app.middleware import TraceContextMiddleware
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from app.core.telemetry import (
+    instrument_app,
+    instrument_redis,
+    setup_logging,
+    setup_metrics,
+    setup_telemetry,
+)
+from app.middleware import MetricsMiddleware, TraceContextMiddleware
 from app.routes import (
     agents,
     auth,
@@ -19,10 +28,12 @@ from app.routes import (
     conversations,
     documents,
     health,
+    images,
     notifications,
     profile,
     projects,
     webhooks,
+    workflows,
 )
 from app.routes.admin import audit as admin_audit
 from app.routes.admin import dashboard as admin_dashboard
@@ -39,8 +50,12 @@ from app.schemas.base import ErrorResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
-    # Startup
+    # Startup - initialize in order: logging -> tracing -> db -> redis -> metrics
+    setup_logging()
     setup_telemetry()
+    instrument_database_engine()
+    instrument_redis()
+    setup_metrics()
     yield
     # Shutdown (cleanup if needed)
 
@@ -54,8 +69,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Rate limiter state
+app.state.limiter = limiter
+
 # Instrument with OpenTelemetry (must be before other middleware)
 instrument_app(app)
+
+# Metrics Middleware (records HTTP request metrics)
+app.add_middleware(MetricsMiddleware)
 
 # Trace Context Middleware (creates RequestContext per request)
 app.add_middleware(TraceContextMiddleware)
@@ -84,31 +105,37 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
 
+# Rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+
 # Routers
-app.include_router(health.router, tags=["Health"])
-app.include_router(auth.router, prefix="/api")
-app.include_router(chat.router, prefix="/api")
-app.include_router(conversations.router, prefix="/api")
-app.include_router(documents.router, prefix="/api")
-app.include_router(projects.router, prefix="/api")
-app.include_router(agents.router, prefix="/api")
-app.include_router(profile.router, prefix="/api")
-app.include_router(billing.router, prefix="/api")
-app.include_router(notifications.router, prefix="/api")
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(conversations.router, prefix="/api/v1")
+app.include_router(documents.router, prefix="/api/v1")
+app.include_router(projects.router, prefix="/api/v1")
+app.include_router(agents.router, prefix="/api/v1")
+app.include_router(profile.router, prefix="/api/v1")
+app.include_router(billing.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(workflows.router, prefix="/api/v1")
+app.include_router(images.router, prefix="/api/v1")
 
 # Admin routers
-app.include_router(admin_audit.router, prefix="/api/admin")
-app.include_router(admin_dashboard.router, prefix="/api/admin")
-app.include_router(admin_notifications.router, prefix="/api/admin")
-app.include_router(admin_plans.router, prefix="/api/admin")
-app.include_router(admin_settings.router, prefix="/api/admin")
-app.include_router(admin_subscriptions.router, prefix="/api/admin")
-app.include_router(admin_system.router, prefix="/api/admin")
-app.include_router(admin_usage.router, prefix="/api/admin")
-app.include_router(admin_users.router, prefix="/api/admin")
+app.include_router(admin_audit.router, prefix="/api/v1/admin")
+app.include_router(admin_dashboard.router, prefix="/api/v1/admin")
+app.include_router(admin_notifications.router, prefix="/api/v1/admin")
+app.include_router(admin_plans.router, prefix="/api/v1/admin")
+app.include_router(admin_settings.router, prefix="/api/v1/admin")
+app.include_router(admin_subscriptions.router, prefix="/api/v1/admin")
+app.include_router(admin_system.router, prefix="/api/v1/admin")
+app.include_router(admin_usage.router, prefix="/api/v1/admin")
+app.include_router(admin_users.router, prefix="/api/v1/admin")
 
 # Webhook routers
-app.include_router(webhooks.router, prefix="/api")
+app.include_router(webhooks.router, prefix="/api/v1")
 
 # Serve static files (frontend) - must be last to not override API routes
 if settings.serve_static_files and os.path.exists(settings.static_files_path):

@@ -66,16 +66,30 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    workflows: Mapped[list["Workflow"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    workflow_executions: Mapped[list["WorkflowExecution"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    generated_images: Mapped[list["GeneratedImage"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
 
 
 # Import at the end to avoid circular imports
-from app.models.project import Project  # noqa: E402, F401
+from app.models.agent import Agent  # noqa: E402, F401
 from app.models.conversation import Conversation  # noqa: E402, F401
 from app.models.document import Document  # noqa: E402, F401
-from app.models.agent import Agent  # noqa: E402, F401
-from app.models.subscription import Subscription  # noqa: E402, F401
 from app.models.invoice import Invoice  # noqa: E402, F401
+from app.models.project import Project  # noqa: E402, F401
+from app.models.subscription import Subscription  # noqa: E402, F401
 from app.models.usage import UsageRecord, UsageSummary  # noqa: E402, F401
+from app.models.workflow import Workflow, WorkflowExecution  # noqa: E402, F401
+from app.models.generated_image import GeneratedImage  # noqa: E402, F401

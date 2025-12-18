@@ -6,7 +6,6 @@ from math import ceil
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.telemetry import traced
 from app.models.document import Document

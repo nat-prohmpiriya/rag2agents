@@ -1,8 +1,10 @@
 # Environment files (keep .example)
 .env
 .env.local
+.env.docker
 .env.*.local
 !.env.example
+!.env.docker.example
 
 # Python
 __pycache__/
@@ -28,5 +30,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+
 # Docker volumes (local)
 data/
+
+.claude
+.env*

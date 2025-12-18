@@ -14,11 +14,11 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let showChat = $state(true);
-	let chatPanelWidth = $state(400);
+	let chatPanelWidth = $state(500);
 	let isResizing = $state(false);
 
 	let documentId = $derived($page.params.id);
-	let pdfUrl = $derived(document ? `${API_BASE}/api/documents/${document.id}/file` : '');
+	let pdfUrl = $derived(document ? `${API_BASE}/documents/${document.id}/file` : '');
 	let isPdf = $derived(document?.file_type === 'pdf');
 
 	onMount(async () => {
@@ -64,7 +64,7 @@
 	function handleMouseMove(e: MouseEvent) {
 		if (!isResizing) return;
 		const newWidth = window.innerWidth - e.clientX;
-		chatPanelWidth = Math.max(300, Math.min(600, newWidth));
+		chatPanelWidth = Math.max(350, Math.min(800, newWidth));
 	}
 
 	function stopResize() {
