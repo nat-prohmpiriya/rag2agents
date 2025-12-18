@@ -55,7 +55,8 @@ export async function fetchApi<T>(
 		try {
 			const errorData = await response.json();
 			// Backend returns { trace_id, error, detail } for errors
-			message = errorData.error || errorData.detail || errorData.message || message;
+			// Prefer detail over error for more meaningful messages
+			message = errorData.detail || errorData.error || errorData.message || message;
 			traceId = errorData.trace_id;
 			detail = errorData.detail;
 		} catch {
@@ -107,7 +108,8 @@ export async function fetchApiWithTrace<T>(
 
 		try {
 			const errorData = await response.json();
-			message = errorData.error || errorData.detail || errorData.message || message;
+			// Prefer detail over error for more meaningful messages
+			message = errorData.detail || errorData.error || errorData.message || message;
 			traceId = errorData.trace_id;
 			detail = errorData.detail;
 		} catch {
@@ -145,7 +147,8 @@ export async function fetchStream(
 		let traceId: string | undefined;
 		try {
 			const errorData = await response.json();
-			message = errorData.error || errorData.detail || errorData.message || message;
+			// Prefer detail over error for more meaningful messages
+			message = errorData.detail || errorData.error || errorData.message || message;
 			traceId = errorData.trace_id;
 		} catch {
 			message = await response.text();
@@ -210,7 +213,8 @@ export async function uploadFile<T>(
 				let traceId: string | undefined;
 				try {
 					const errorData = JSON.parse(xhr.responseText);
-					message = errorData.error || errorData.detail || errorData.message || message;
+					// Prefer detail over error for more meaningful messages
+					message = errorData.detail || errorData.error || errorData.message || message;
 					traceId = errorData.trace_id;
 				} catch {
 					message = xhr.responseText || message;

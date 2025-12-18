@@ -39,7 +39,7 @@
     },
     {
       title: "5. Third-Party Services",
-      content: `We use third-party AI providers (OpenAI, Google, Groq) to process your queries. Your data sent to these providers is governed by their respective privacy policies. We only send the minimum data necessary to provide the service.`
+      content: `We use Google Gemini AI to process your queries. Your data sent to Google is governed by their privacy policy. We only send the minimum data necessary to provide the service.`
     },
     {
       title: "6. Your Rights",

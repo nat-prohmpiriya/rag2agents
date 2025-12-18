@@ -31,5 +31,7 @@ export type {
 	ImageGenerateRequest,
 	ImageGenerateResponse,
 	ImageModelsResponse,
-	ImageSizesResponse
+	ImageSizesResponse,
+	ImageHistoryItem,
+	ImageHistoryResponse
 } from './images';

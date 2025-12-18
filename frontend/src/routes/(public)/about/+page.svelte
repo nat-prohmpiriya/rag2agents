@@ -5,7 +5,7 @@
   const techStack = [
     { category: "Frontend", items: ["SvelteKit", "Svelte 5", "TypeScript", "Tailwind CSS", "shadcn-svelte"] },
     { category: "Backend", items: ["FastAPI", "Python 3.12", "SQLAlchemy", "PostgreSQL", "pgvector"] },
-    { category: "AI/ML", items: ["LiteLLM", "OpenAI", "Google Gemini", "Groq", "RAG"] },
+    { category: "AI/ML", items: ["LiteLLM", "Google Gemini", "RAG"] },
     { category: "Infrastructure", items: ["Docker", "Redis", "Celery", "S3 Storage"] }
   ];
 </script>
@@ -44,7 +44,7 @@
             AI integration, and enterprise-ready architecture patterns.
           </p>
           <p class="text-gray-400 leading-relaxed">
-            Key features include multi-model support (OpenAI, Gemini, Groq), custom tool integration,
+            Key features include multi-model support (Google Gemini), custom tool integration,
             real-time usage analytics, and a comprehensive admin panel for user and system management.
           </p>
         </div>
@@ -79,7 +79,7 @@
           </div>
           <div class="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
             <h3 class="text-lg font-semibold text-white mb-2">Multi-Model Support</h3>
-            <p class="text-gray-400 text-sm">Choose from OpenAI GPT-4, Google Gemini, Groq, and more LLM providers.</p>
+            <p class="text-gray-400 text-sm">Powered by Google Gemini for intelligent AI conversations.</p>
           </div>
           <div class="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
             <h3 class="text-lg font-semibold text-white mb-2">Custom Tools</h3>

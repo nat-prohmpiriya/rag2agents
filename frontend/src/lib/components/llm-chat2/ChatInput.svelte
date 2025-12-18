@@ -64,8 +64,6 @@
 				return '✨';
 			case 'anthropic':
 				return '🧠';
-			case 'groq':
-				return '⚡';
 			default:
 				return '🔮';
 		}
