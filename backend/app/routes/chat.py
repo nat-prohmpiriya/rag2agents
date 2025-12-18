@@ -17,7 +17,7 @@ from app.core.dependencies import get_current_user, get_db, require_token_quota
 from app.models.usage import RequestType
 from app.models.user import User
 from app.providers.llm import ChatMessage as LLMChatMessage
-from app.providers.llm import llm_client
+from app.providers.llm import ImageContent, llm_client
 from app.schemas.base import BaseResponse
 from app.schemas.chat import (
     AgentChatResponse,
@@ -511,7 +511,15 @@ async def chat_stream(
     # Remove duplicate user message (only if we saved it above)
     if not data.skip_user_save:
         messages = messages[:-1]
-    messages.append(LLMChatMessage(role="user", content=data.message))
+
+    # Build user message with optional images
+    user_images: list[ImageContent] | None = None
+    if data.images:
+        user_images = [
+            ImageContent(media_type=img.media_type, data=img.data)
+            for img in data.images
+        ]
+    messages.append(LLMChatMessage(role="user", content=data.message, images=user_images))
 
     # RAG: Retrieve context and build system prompt if enabled
     sources_data: list[dict] | None = None
@@ -560,6 +568,7 @@ async def chat_stream(
                 frequency_penalty=data.frequency_penalty,
                 presence_penalty=data.presence_penalty,
                 user=user_id_str,
+                web_search=data.web_search,
             ):
                 full_response += chunk
                 # SSE format: data: {"content": "...", "done": false}

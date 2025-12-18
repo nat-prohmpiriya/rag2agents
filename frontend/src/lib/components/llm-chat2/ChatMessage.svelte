@@ -38,6 +38,7 @@
 		createdAt?: Date;
 		isLastAssistant?: boolean;
 		isLastUser?: boolean;
+		images?: string[]; // base64 previews for user messages
 		onRegenerate?: () => void;
 		onEdit?: (newContent: string) => void;
 	}
@@ -53,6 +54,7 @@
 		createdAt,
 		isLastAssistant = false,
 		isLastUser = false,
+		images = [],
 		onRegenerate,
 		onEdit
 	}: Props = $props();
@@ -140,6 +142,18 @@
 				{:else}
 					<div class="group relative">
 						<div class="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-3">
+							<!-- Images -->
+							{#if images && images.length > 0}
+								<div class="flex gap-2 mb-2 flex-wrap">
+									{#each images as img}
+										<img
+											src={img}
+											alt="Uploaded image"
+											class="h-20 w-20 rounded-lg object-cover border border-primary-foreground/20"
+										/>
+									{/each}
+								</div>
+							{/if}
 							<p class="whitespace-pre-wrap break-words">{content}</p>
 						</div>
 						<!-- Edit button on hover -->

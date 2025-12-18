@@ -23,6 +23,11 @@ export interface ModelsResponse {
 	models: ModelInfo[];
 }
 
+export interface ImageData {
+	media_type: string;
+	data: string; // base64 encoded
+}
+
 export interface ChatRequest {
 	message: string;
 	conversation_id?: string;
@@ -39,6 +44,9 @@ export interface ChatRequest {
 	project_id?: string;
 	agent_slug?: string;
 	skip_user_save?: boolean;
+	thinking?: boolean;
+	web_search?: boolean;
+	images?: ImageData[];
 }
 
 export interface ChatMessage {

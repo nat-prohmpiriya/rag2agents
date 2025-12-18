@@ -6,6 +6,13 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ImageData(BaseModel):
+    """Image data for vision/multimodal requests."""
+
+    media_type: str = Field(..., description="MIME type of the image (e.g., image/png, image/jpeg)")
+    data: str = Field(..., description="Base64 encoded image data")
+
+
 class ChatRequest(BaseModel):
     """Chat request schema."""
 
@@ -35,6 +42,18 @@ class ChatRequest(BaseModel):
     skip_user_save: bool = Field(
         default=False,
         description="Skip saving user message to DB (used for regenerate response)"
+    )
+    thinking: bool = Field(
+        default=False,
+        description="Enable extended thinking mode for supported models (e.g., Gemini 2.5)"
+    )
+    web_search: bool = Field(
+        default=False,
+        description="Enable web search tool for grounding responses with real-time information"
+    )
+    images: list[ImageData] | None = Field(
+        default=None,
+        description="Optional list of images for vision/multimodal models"
     )
 
     model_config = ConfigDict(
