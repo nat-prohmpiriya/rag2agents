@@ -85,6 +85,13 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-004"
     embedding_dimension: int = 768
 
+    # MinIO Storage
+    minio_endpoint: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
+    minio_bucket: str = "ragagent-images"
+    minio_secure: bool = True
+
     @property
     def is_development(self) -> bool:
         return self.app_env == "development"

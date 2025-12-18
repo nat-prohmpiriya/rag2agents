@@ -134,14 +134,15 @@ DEFAULT_CREDIT_CONFIG: dict[str, int] = {
     "claude-3-sonnet": 2,
     "claude-3-opus": 5,
     "claude-3.5-sonnet": 3,
-    # Google models
+    # Google Gemini models
     "gemini-1.5-flash": 1,
     "gemini-1.5-pro": 3,
-    "gemini-pro": 2,
-    # Groq models
-    "llama-3.1-8b-instant": 1,
-    "llama-3.1-70b-versatile": 2,
-    "mixtral-8x7b-32768": 1,
+    "gemini-2.0-flash": 1,
+    "gemini-2.5-flash": 1,
+    "gemini-2.5-flash-lite": 1,
+    "gemini-2.5-pro": 3,
+    "gemini-3-flash": 2,
+    "gemini-3-pro": 4,
 }
 
 

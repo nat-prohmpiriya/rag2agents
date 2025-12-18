@@ -74,6 +74,10 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    generated_images: Mapped[list["GeneratedImage"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
@@ -88,3 +92,4 @@ from app.models.project import Project  # noqa: E402, F401
 from app.models.subscription import Subscription  # noqa: E402, F401
 from app.models.usage import UsageRecord, UsageSummary  # noqa: E402, F401
 from app.models.workflow import Workflow, WorkflowExecution  # noqa: E402, F401
+from app.models.generated_image import GeneratedImage  # noqa: E402, F401

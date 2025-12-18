@@ -29,6 +29,7 @@ from app.models.workflow import (
     WorkflowExecution,
     WorkflowStatus,
 )
+from app.models.generated_image import GeneratedImage
 
 __all__ = [
     "TimestampMixin",
@@ -69,4 +70,5 @@ __all__ = [
     "WorkflowStatus",
     "ExecutionStatus",
     "NodeType",
+    "GeneratedImage",
 ]
