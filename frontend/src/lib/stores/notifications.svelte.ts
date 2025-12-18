@@ -6,7 +6,7 @@ import type {
 	NotificationListParams
 } from '$lib/api';
 
-const POLLING_INTERVAL = 60000; // 60 seconds
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 class NotificationStore {
 	// State
@@ -23,9 +23,12 @@ class NotificationStore {
 	total = $state(0);
 	perPage = $state(20);
 
-	// Polling state
-	private pollingInterval: ReturnType<typeof setInterval> | null = null;
-	private isPolling = $state(false);
+	// SSE state
+	private eventSource: EventSource | null = null;
+	private isConnected = $state(false);
+	private reconnectAttempts = 0;
+	private maxReconnectAttempts = 5;
+	private reconnectDelay = 1000; // Start with 1 second
 
 	// Derived
 	hasUnread = $derived(this.unreadCount > 0);
@@ -168,31 +171,177 @@ class NotificationStore {
 	}
 
 	/**
-	 * Start polling for unread count
+	 * Connect to SSE stream for real-time notifications
 	 */
-	startPolling() {
-		if (this.isPolling || typeof window === 'undefined') return;
+	connect() {
+		if (this.isConnected || typeof window === 'undefined') return;
 
-		this.isPolling = true;
+		const token = localStorage.getItem('access_token');
+		if (!token) {
+			console.warn('No access token, cannot connect to notification stream');
+			return;
+		}
 
-		// Fetch immediately
+		// EventSource doesn't support custom headers, use query param or cookie
+		// We'll use a workaround with fetch + ReadableStream for auth
+		this.connectWithAuth(token);
+	}
+
+	private async connectWithAuth(token: string) {
+		try {
+			const response = await fetch(`${API_BASE}/notifications/stream`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: 'text/event-stream'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error(`SSE connection failed: ${response.status}`);
+			}
+
+			const reader = response.body?.getReader();
+			if (!reader) {
+				throw new Error('No response body');
+			}
+
+			this.isConnected = true;
+			this.reconnectAttempts = 0;
+			this.reconnectDelay = 1000;
+
+			const decoder = new TextDecoder();
+			let buffer = '';
+
+			const processStream = async () => {
+				try {
+					while (this.isConnected) {
+						const { done, value } = await reader.read();
+
+						if (done) {
+							break;
+						}
+
+						buffer += decoder.decode(value, { stream: true });
+
+						// Process complete events
+						const lines = buffer.split('\n');
+						buffer = lines.pop() || '';
+
+						let currentEvent = '';
+						let currentData = '';
+
+						for (const line of lines) {
+							if (line.startsWith('event: ')) {
+								currentEvent = line.slice(7);
+							} else if (line.startsWith('data: ')) {
+								currentData = line.slice(6);
+							} else if (line === '' && currentEvent && currentData) {
+								this.handleSSEEvent(currentEvent, currentData);
+								currentEvent = '';
+								currentData = '';
+							}
+						}
+					}
+				} catch (err) {
+					console.error('SSE stream error:', err);
+				} finally {
+					reader.releaseLock();
+					this.handleDisconnect();
+				}
+			};
+
+			processStream();
+		} catch (err) {
+			console.error('SSE connection error:', err);
+			this.handleDisconnect();
+		}
+	}
+
+	private handleSSEEvent(event: string, data: string) {
+		try {
+			const parsed = JSON.parse(data);
+
+			switch (event) {
+				case 'connected':
+					console.log('Notification SSE connected');
+					this.unreadCount = parsed.count;
+					break;
+
+				case 'unread_count':
+					this.unreadCount = parsed.count;
+					break;
+
+				case 'new_notification':
+					// Add to top of notifications list if we have them loaded
+					if (this.notifications.length > 0) {
+						this.notifications = [parsed as Notification, ...this.notifications];
+					}
+					this.unreadCount++;
+					break;
+
+				case 'heartbeat':
+					// Keep-alive, no action needed
+					break;
+
+				default:
+					console.log('Unknown SSE event:', event, parsed);
+			}
+		} catch (err) {
+			console.error('Failed to parse SSE event:', err);
+		}
+	}
+
+	private handleDisconnect() {
+		this.isConnected = false;
+
+		// Attempt reconnect with exponential backoff
+		if (this.reconnectAttempts < this.maxReconnectAttempts) {
+			this.reconnectAttempts++;
+			const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+			console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+
+			setTimeout(() => {
+				if (!this.isConnected) {
+					this.connect();
+				}
+			}, delay);
+		} else {
+			console.error('Max reconnect attempts reached, falling back to polling');
+			// Fallback to polling if SSE fails
+			this.startPollingFallback();
+		}
+	}
+
+	private pollingInterval: ReturnType<typeof setInterval> | null = null;
+
+	private startPollingFallback() {
+		if (this.pollingInterval) return;
+
 		this.fetchUnreadCount();
-
-		// Set up interval
 		this.pollingInterval = setInterval(() => {
 			this.fetchUnreadCount();
-		}, POLLING_INTERVAL);
+		}, 60000);
 	}
 
 	/**
-	 * Stop polling for unread count
+	 * Disconnect from SSE stream
 	 */
-	stopPolling() {
+	disconnect() {
+		this.isConnected = false;
+
 		if (this.pollingInterval) {
 			clearInterval(this.pollingInterval);
 			this.pollingInterval = null;
 		}
-		this.isPolling = false;
+	}
+
+	// Backwards compatibility aliases
+	startPolling() {
+		this.connect();
+	}
+
+	stopPolling() {
+		this.disconnect();
 	}
 
 	/**
