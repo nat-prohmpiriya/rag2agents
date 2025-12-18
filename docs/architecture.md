@@ -103,7 +103,7 @@
 │  │  - OpenAI          │  │  - Subscriptions   │  │  - Traces          │    │
 │  │  - Anthropic       │  │  - Invoices        │  │  - Metrics         │    │
 │  │  - Google Gemini   │  │  - Webhooks        │  │  - Logs            │    │
-│  │  - Groq            │  │                    │  │                    │    │
+│  │                    │  │                    │  │                    │    │
 │  │                    │  │                    │  │                    │    │
 │  └────────────────────┘  └────────────────────┘  └────────────────────┘    │
 │                                                                              │

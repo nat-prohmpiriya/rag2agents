@@ -15,7 +15,7 @@ RAG Agent Platform enables developers and businesses to create AI-powered assist
 
 - **RAG Pipeline** - Upload documents (PDF, DOCX, TXT, MD, CSV), auto-chunk, embed, and retrieve with vector similarity search
 - **Visual Workflow Builder** - Drag-and-drop canvas with 10+ node types (LLM, Agent, RAG, HTTP, Condition, Loop, etc.)
-- **Multi-Model Support** - Switch between OpenAI, Anthropic, Gemini, and Groq via LiteLLM
+- **Multi-Model Support** - Powered by Google Gemini via LiteLLM
 - **Real-time Streaming** - Server-Sent Events (SSE) for live chat responses
 - **Subscription Billing** - Stripe integration with plans, checkout, and customer portal
 - **Enterprise Security** - JWT auth, rate limiting, audit logs, and OpenTelemetry observability
@@ -39,8 +39,8 @@ RAG Agent Platform enables developers and businesses to create AI-powered assist
 │ PostgreSQL  │ │  LiteLLM  │ │   Redis   │ │  Stripe   │
 │  + pgvector │ │   Proxy   │ │   Cache   │ │  Billing  │
 │  (vectors)  │ │ (OpenAI/  │ │  (rate    │ │           │
-│             │ │  Gemini/  │ │  limiting)│ │           │
-│             │ │  Groq)    │ │           │ │           │
+│             │ │  Gemini)  │ │  limiting)│ │           │
+│             │ │           │ │           │ │           │
 └─────────────┘ └───────────┘ └───────────┘ └───────────┘
 ```
 
@@ -85,7 +85,7 @@ RAG Agent Platform enables developers and businesses to create AI-powered assist
 ### AI & Infrastructure
 | Technology | Purpose |
 |------------|---------|
-| LiteLLM | Unified LLM API (OpenAI, Gemini, Groq) |
+| LiteLLM | Unified LLM API (Google Gemini) |
 | OpenTelemetry | Distributed tracing & observability |
 | Redis | Rate limiting & caching |
 | Stripe | Payment processing |

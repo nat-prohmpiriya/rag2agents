@@ -120,7 +120,7 @@
 - **Drag-and-Drop Canvas:** สร้าง workflows แบบ visual
 - **Node Types:**
   - `start` / `end` - จุดเริ่มต้นและสิ้นสุด
-  - `llm` - เรียกใช้ LLM (OpenAI/Gemini/Groq)
+  - `llm` - เรียกใช้ LLM (Google Gemini)
   - `agent` - เรียกใช้ custom agent
   - `rag` - ค้นหาจาก knowledge base
   - `tool` - เรียกใช้ external tools

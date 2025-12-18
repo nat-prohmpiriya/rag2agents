@@ -13,7 +13,7 @@
 ## Stack
 - **Frontend:** SvelteKit 2 + Svelte 5 (Runes) + Tailwind v4 + shadcn-svelte
 - **Backend:** FastAPI + Python 3.12 + SQLAlchemy async + PostgreSQL
-- **AI:** LiteLLM (OpenAI/Gemini/Groq) + pgvector
+- **AI:** LiteLLM (Google Gemini) + pgvector
 
 ## Critical Patterns
 - **Svelte 5:** `$state()`, `$derived()`, `$props()`, `{@render}`

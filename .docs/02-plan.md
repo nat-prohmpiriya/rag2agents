@@ -7,7 +7,7 @@
 **Tech Stack:**
 - **Frontend:** SvelteKit 2 + Svelte 5 (Runes) + Tailwind CSS v4 + shadcn-svelte
 - **Backend:** FastAPI + Python 3.12 + SQLAlchemy async + PostgreSQL 16
-- **AI Integration:** LiteLLM Proxy (multi-provider: OpenAI/Gemini/Groq/Anthropic)
+- **AI Integration:** LiteLLM Proxy (Google Gemini)
 - **Vector Store:** pgvector (PostgreSQL extension)
 - **Caching/Rate Limiting:** Redis
 - **Payment:** Stripe
@@ -53,11 +53,11 @@
                                                       ▼
                                     ┌─────────────────────────────────┐
                                     │      LLM Providers              │
-                                    │  ├── OpenAI (GPT-4, GPT-4o)     │
-                                    │  ├── Anthropic (Claude)         │
-                                    │  ├── Google (Gemini)            │
-                                    │  ├── Groq (Llama, Mixtral)      │
-                                    │  └── Mistral, Cohere, etc.      │
+                                    │  └── Google (Gemini)            │
+                                    │                                 │
+                                    │                                 │
+                                    │                                 │
+                                    │                                 │
                                     └─────────────────────────────────┘
 ```
 
@@ -870,12 +870,7 @@ frontend/
 
 | Provider | Models | Use Case |
 |----------|--------|----------|
-| **OpenAI** | GPT-4, GPT-4o, GPT-3.5-turbo | Chat, RAG |
-| **Anthropic** | Claude 3 (Opus, Sonnet, Haiku) | Chat, RAG |
-| **Google** | Gemini Pro, text-embedding-004 | Chat, Embeddings |
-| **Groq** | Llama 3, Mixtral | Fast inference |
-| **Mistral** | Mistral Large, Medium | Chat |
-| **Cohere** | Command | Chat |
+| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash, text-embedding-004 | Chat, RAG, Embeddings |
 
 ### 5.3 Payment (Stripe)
 

@@ -49,7 +49,7 @@
 
 
   1. โชว์ RAG Pipeline - Document chunking, embedding, retrieval
-  2. โชว์ Multi-model - Switch ระหว่าง GPT/Gemini/Groq
+  2. โชว์ Multi-model - Switch ระหว่าง Gemini models (Pro/Flash)
   3. โชว์ AI Agent - Custom tools, function calling
   4. โชว์ Analytics - Token usage, model comparison
   5. ai gen image
