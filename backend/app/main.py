@@ -28,6 +28,7 @@ from app.routes import (
     conversations,
     documents,
     health,
+    images,
     notifications,
     profile,
     projects,
@@ -120,6 +121,7 @@ app.include_router(profile.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(workflows.router, prefix="/api/v1")
+app.include_router(images.router, prefix="/api/v1")
 
 # Admin routers
 app.include_router(admin_audit.router, prefix="/api/v1/admin")
