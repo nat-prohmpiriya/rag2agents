@@ -47,7 +47,7 @@ services:
       - "4000:4000"
     env_file: .env.docker
     environment:
-      DATABASE_URL: ${LITELLM_DATABASE_URL}
+      DATABASE_URL: postgresql://ragagent:ragagent123@postgres:5432/litellm
     volumes:
       - ./infra/litellm-config.yaml:/app/config.yaml
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
@@ -57,11 +57,59 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health/liveliness"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ragagent-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env.docker
+    volumes:
+      - ./backend:/app
+      - backend-cache:/app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ragagent-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    env_file: .env.docker
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -70,6 +118,10 @@ volumes:
     name: ragagent-postgres-data
   redis-data:
     name: ragagent-redis-data
+  backend-cache:
+    name: ragagent-backend-cache
+  frontend-node-modules:
+    name: ragagent-frontend-node-modules
 
 networks:
   app-network:
