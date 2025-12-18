@@ -16,7 +16,7 @@
     },
     {
       question: "Can I use my own AI models?",
-      answer: "Yes! We support multiple AI providers including OpenAI (GPT-4, GPT-3.5), Google Gemini, Groq, and more. Enterprise customers can also bring their own fine-tuned models or self-hosted LLMs."
+      answer: "Yes! We support Google Gemini models including Gemini 2.5 Pro, Gemini 2.5 Flash, and more. Enterprise customers can also bring their own fine-tuned models or self-hosted LLMs."
     },
     {
       question: "What's the difference between agents and chatbots?",
