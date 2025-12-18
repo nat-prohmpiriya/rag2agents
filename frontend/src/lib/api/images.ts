@@ -26,6 +26,24 @@ export interface ImageGenerateRequest {
 	n?: number;
 }
 
+export interface ImageHistoryItem {
+	id: string;
+	prompt: string;
+	revised_prompt: string | null;
+	model: string;
+	size: string;
+	image_url: string;
+	file_size: number | null;
+	created_at: string;
+}
+
+export interface ImageHistoryResponse {
+	images: ImageHistoryItem[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
 export interface ImageGenerateResponse {
 	id: string;
 	created: string;
@@ -64,5 +82,21 @@ export async function generateImage(request: ImageGenerateRequest): Promise<Imag
 	return fetchApi<ImageGenerateResponse>('/images/generate', {
 		method: 'POST',
 		body: JSON.stringify(request)
+	});
+}
+
+/**
+ * Get user's image generation history
+ */
+export async function getImageHistory(limit: number = 50, offset: number = 0): Promise<ImageHistoryResponse> {
+	return fetchApi<ImageHistoryResponse>(`/images/history?limit=${limit}&offset=${offset}`);
+}
+
+/**
+ * Delete a generated image
+ */
+export async function deleteImage(imageId: string): Promise<{ deleted: boolean; id: string }> {
+	return fetchApi<{ deleted: boolean; id: string }>(`/images/${imageId}`, {
+		method: 'DELETE'
 	});
 }

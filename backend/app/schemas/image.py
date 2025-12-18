@@ -60,3 +60,27 @@ class ImageSizesResponse(BaseModel):
     """Response schema for available image sizes."""
 
     sizes: list[ImageSizeInfo]
+
+
+class ImageHistoryItem(BaseModel):
+    """Schema for image history item."""
+
+    id: str
+    prompt: str
+    revised_prompt: str | None = None
+    model: str
+    size: str
+    image_url: str
+    file_size: int | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ImageHistoryResponse(BaseModel):
+    """Response schema for image history."""
+
+    images: list[ImageHistoryItem]
+    total: int
+    limit: int
+    offset: int

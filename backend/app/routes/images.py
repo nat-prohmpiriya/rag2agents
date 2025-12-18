@@ -1,16 +1,21 @@
 """Image generation API endpoints."""
 
 import logging
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
+from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.image import (
     ImageGenerateRequest,
     ImageGenerateResponse,
+    ImageHistoryItem,
+    ImageHistoryResponse,
     ImageModelInfo,
     ImageModelsResponse,
     ImageSizeInfo,
@@ -59,6 +64,7 @@ async def get_sizes(
 async def generate_image(
     request: ImageGenerateRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[ImageGenerateResponse]:
     """
     Generate an image from a text prompt.
@@ -77,6 +83,7 @@ async def generate_image(
             size=request.size,
             n=request.n,
             user_id=current_user.id,
+            db=db,
         )
 
         return BaseResponse(
@@ -96,3 +103,82 @@ async def generate_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during image generation",
         )
+
+
+@router.get("/history")
+async def get_history(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[ImageHistoryResponse]:
+    """
+    Get user's generated images history.
+
+    - **limit**: Maximum number of images to return (1-100)
+    - **offset**: Number of images to skip
+    """
+    ctx = get_context()
+
+    images = await image_generation.get_user_images(
+        db=db,
+        user_id=current_user.id,
+        limit=limit,
+        offset=offset,
+    )
+    total = await image_generation.get_user_images_count(db=db, user_id=current_user.id)
+
+    history_items = [
+        ImageHistoryItem(
+            id=str(img.id),
+            prompt=img.prompt,
+            revised_prompt=img.revised_prompt,
+            model=img.model,
+            size=img.size,
+            image_url=img.image_url,
+            file_size=img.file_size,
+            created_at=img.created_at,
+        )
+        for img in images
+    ]
+
+    return BaseResponse(
+        trace_id=ctx.trace_id,
+        data=ImageHistoryResponse(
+            images=history_items,
+            total=total,
+            limit=limit,
+            offset=offset,
+        ),
+    )
+
+
+@router.delete("/{image_id}")
+async def delete_image(
+    image_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[dict]:
+    """
+    Delete a generated image.
+
+    - **image_id**: UUID of the image to delete
+    """
+    ctx = get_context()
+
+    deleted = await image_generation.delete_user_image(
+        db=db,
+        user_id=current_user.id,
+        image_id=image_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found",
+        )
+
+    return BaseResponse(
+        trace_id=ctx.trace_id,
+        data={"deleted": True, "id": str(image_id)},
+    )

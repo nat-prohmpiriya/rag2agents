@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Image, Sparkles, Download, Save, RefreshCw, Loader2, Settings2 } from 'lucide-svelte';
+	import { Image, Sparkles, Download, Trash2, RefreshCw, Loader2, Settings2 } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 	import { Separator } from '$lib/components/ui/separator';
-	import { imagesApi, type ImageModel, type ImageSize } from '$lib/api';
+	import { imagesApi, type ImageModel, type ImageSize, type ImageHistoryItem } from '$lib/api';
 
 	// State
 	let prompt = $state('');
@@ -40,15 +40,28 @@
 	let models = $state<ImageModel[]>([]);
 	let sizes = $state<ImageSize[]>([]);
 	let loading = $state(true);
+	let historyTotal = $state(0);
 
 	onMount(async () => {
 		try {
-			const [modelsRes, sizesRes] = await Promise.all([
+			const [modelsRes, sizesRes, historyRes] = await Promise.all([
 				imagesApi.getImageModels(),
-				imagesApi.getImageSizes()
+				imagesApi.getImageSizes(),
+				imagesApi.getImageHistory(50, 0)
 			]);
 			models = modelsRes.models;
 			sizes = sizesRes.sizes;
+			historyTotal = historyRes.total;
+
+			// Load history from API
+			history = historyRes.images.map((img: ImageHistoryItem) => ({
+				id: img.id,
+				url: img.image_url,
+				prompt: img.prompt,
+				model: img.model,
+				size: img.size,
+				createdAt: new Date(img.created_at)
+			}));
 
 			// Set default model if available
 			if (models.length > 0) {
@@ -94,6 +107,7 @@
 				}
 
 				latestImage = newImage;
+				historyTotal++;
 				toast.success('Image generated successfully!');
 			}
 		} catch (err) {
@@ -120,9 +134,37 @@
 		}
 	}
 
-	function handleSaveToKB() {
+	async function handleDelete() {
 		if (!latestImage) return;
-		toast.info('Save to Knowledge Base - Coming soon!');
+
+		try {
+			await imagesApi.deleteImage(latestImage.id);
+			toast.success('Image deleted');
+
+			// Move to next image from history or clear
+			if (history.length > 0) {
+				latestImage = history[0];
+				history = history.slice(1);
+			} else {
+				latestImage = null;
+			}
+			historyTotal--;
+		} catch (err) {
+			console.error('Failed to delete image:', err);
+			toast.error('Failed to delete image');
+		}
+	}
+
+	async function handleDeleteFromHistory(image: (typeof history)[0]) {
+		try {
+			await imagesApi.deleteImage(image.id);
+			history = history.filter((h) => h.id !== image.id);
+			historyTotal--;
+			toast.success('Image deleted');
+		} catch (err) {
+			console.error('Failed to delete image:', err);
+			toast.error('Failed to delete image');
+		}
 	}
 
 	function handleSelectFromHistory(image: (typeof history)[0]) {
@@ -285,9 +327,9 @@
 										<Download class="mr-2 size-4" />
 										Download
 									</Button>
-									<Button variant="outline" size="sm" class="flex-1" onclick={handleSaveToKB}>
-										<Save class="mr-2 size-4" />
-										Save to KB
+									<Button variant="outline" size="sm" class="flex-1 text-destructive hover:text-destructive" onclick={handleDelete}>
+										<Trash2 class="mr-2 size-4" />
+										Delete
 									</Button>
 									<Button variant="outline" size="sm" onclick={handleGenerate} disabled={generating}>
 										<RefreshCw class="size-4" />
@@ -318,23 +360,32 @@
 					<div>
 						<div class="mb-4 flex items-center justify-between">
 							<h2 class="text-lg font-medium">History</h2>
-							<span class="text-sm text-muted-foreground">{history.length} images</span>
+							<span class="text-sm text-muted-foreground">{historyTotal} images</span>
 						</div>
 
 						<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
 							{#each history as image (image.id)}
-								<button
-									type="button"
-									class="group relative aspect-square overflow-hidden rounded-lg border bg-card transition-all hover:ring-2 hover:ring-primary"
-									onclick={() => handleSelectFromHistory(image)}
-								>
-									<img src={image.url} alt={image.prompt} class="size-full object-cover" />
-									<div
-										class="absolute inset-0 flex items-end bg-linear-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+								<div class="group relative">
+									<button
+										type="button"
+										class="aspect-square w-full overflow-hidden rounded-lg border bg-card transition-all hover:ring-2 hover:ring-primary"
+										onclick={() => handleSelectFromHistory(image)}
 									>
-										<p class="line-clamp-2 p-2 text-xs text-white">{image.prompt}</p>
-									</div>
-								</button>
+										<img src={image.url} alt={image.prompt} class="size-full object-cover" />
+										<div
+											class="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+										>
+											<p class="line-clamp-2 p-2 text-xs text-white">{image.prompt}</p>
+										</div>
+									</button>
+									<button
+										type="button"
+										class="absolute top-1 right-1 rounded-full bg-black/50 p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive"
+										onclick={() => handleDeleteFromHistory(image)}
+									>
+										<Trash2 class="size-3 text-white" />
+									</button>
+								</div>
 							{/each}
 						</div>
 					</div>

@@ -1,14 +1,17 @@
 """Service for AI image generation using LiteLLM."""
 
-import base64
 import logging
 import uuid
 from datetime import datetime
 from typing import Any
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.models.generated_image import GeneratedImage
+from app.services import minio_storage
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,7 @@ async def generate_image(
     size: str = "1024x1024",
     n: int = 1,
     user_id: uuid.UUID | None = None,
+    db: AsyncSession | None = None,
 ) -> dict[str, Any]:
     """
     Generate an image using LiteLLM proxy.
@@ -56,6 +60,7 @@ async def generate_image(
         size: Image size (e.g., "1024x1024")
         n: Number of images to generate
         user_id: Optional user ID for tracking
+        db: Optional database session for saving history
 
     Returns:
         Dictionary containing generated image data
@@ -93,18 +98,52 @@ async def generate_image(
                 # Get base64 data or URL
                 if "b64_json" in img_data:
                     image_base64 = img_data["b64_json"]
-                    image_url = f"data:image/png;base64,{image_base64}"
+                    revised_prompt = img_data.get("revised_prompt")
+
+                    # Upload to MinIO if configured
+                    minio_result = await minio_storage.upload_image_from_base64(
+                        base64_data=image_base64,
+                        filename=f"{image_id}.png",
+                    )
+
+                    if minio_result:
+                        # Use MinIO URL
+                        image_url = minio_result["url"]
+                        file_size = minio_result["file_size"]
+
+                        # Save to database if session provided
+                        if db and user_id:
+                            generated_image = GeneratedImage(
+                                id=uuid.UUID(image_id),
+                                user_id=user_id,
+                                prompt=prompt,
+                                revised_prompt=revised_prompt,
+                                model=model,
+                                size=size,
+                                image_url=image_url,
+                                file_size=file_size,
+                            )
+                            db.add(generated_image)
+                            await db.commit()
+                            logger.info(f"Saved generated image to DB: {image_id}")
+                    else:
+                        # Fallback to data URL if MinIO not available
+                        image_url = f"data:image/png;base64,{image_base64}"
+                        file_size = None
+
                 elif "url" in img_data:
                     image_url = img_data["url"]
                     image_base64 = None
+                    file_size = None
+                    revised_prompt = img_data.get("revised_prompt")
                 else:
                     continue
 
                 images.append({
                     "id": image_id,
                     "url": image_url,
-                    "b64_json": image_base64,
-                    "revised_prompt": img_data.get("revised_prompt"),
+                    "b64_json": image_base64 if not minio_result else None,
+                    "revised_prompt": revised_prompt,
                 })
 
             return {
@@ -125,3 +164,80 @@ async def generate_image(
     except Exception as e:
         logger.error(f"Unexpected error during image generation: {e}")
         raise ValueError(f"Image generation failed: {str(e)}")
+
+
+async def get_user_images(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[GeneratedImage]:
+    """
+    Get user's generated images history.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        limit: Maximum number of images to return
+        offset: Number of images to skip
+
+    Returns:
+        List of GeneratedImage objects
+    """
+    stmt = (
+        select(GeneratedImage)
+        .where(GeneratedImage.user_id == user_id)
+        .order_by(GeneratedImage.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_user_images_count(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Get total count of user's generated images."""
+    from sqlalchemy import func
+
+    stmt = select(func.count()).select_from(GeneratedImage).where(GeneratedImage.user_id == user_id)
+    result = await db.execute(stmt)
+    return result.scalar() or 0
+
+
+async def delete_user_image(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    image_id: uuid.UUID,
+) -> bool:
+    """
+    Delete a user's generated image.
+
+    Args:
+        db: Database session
+        user_id: User ID (for authorization)
+        image_id: Image ID to delete
+
+    Returns:
+        True if deleted, False if not found
+    """
+    stmt = select(GeneratedImage).where(
+        GeneratedImage.id == image_id,
+        GeneratedImage.user_id == user_id,
+    )
+    result = await db.execute(stmt)
+    image = result.scalar_one_or_none()
+
+    if not image:
+        return False
+
+    # Delete from MinIO if URL is from MinIO
+    if settings.minio_endpoint and settings.minio_endpoint in image.image_url:
+        # Extract object name from URL
+        object_name = image.image_url.split(f"{settings.minio_bucket}/")[-1]
+        await minio_storage.delete_image(object_name)
+
+    # Delete from database
+    await db.delete(image)
+    await db.commit()
+
+    return True
