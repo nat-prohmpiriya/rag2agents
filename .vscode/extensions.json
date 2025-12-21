@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        // Core
+        "github.copilot",
+        "github.copilot-chat",
+        // Frontend - Svelte
+        "svelte.svelte-vscode",
+        "bradlc.vscode-tailwindcss",
+        // Backend - Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        // Git
+        "eamodio.gitlens",
+        "GitHub.vscode-pull-request-github",
+        // Utilities
+        "usernamehw.errorlens",
+        "christian-kohler.path-intellisense"
+    ]
+}

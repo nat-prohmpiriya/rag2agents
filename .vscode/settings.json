@@ -1,0 +1,44 @@
+{
+    // Editor Settings
+    "editor.formatOnSave": true,
+    // TypeScript/JavaScript
+    "[typescript]": {
+        "editor.formatOnSave": true
+    },
+    "[javascript]": {
+        "editor.formatOnSave": true
+    },
+    "[svelte]": {
+        "editor.defaultFormatter": "svelte.svelte-vscode"
+    },
+    // Python
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    // File Associations
+    "files.associations": {
+        "*.svelte": "svelte"
+    },
+    // Exclude from search
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/node_modules": true,
+        "**/.svelte-kit": true,
+        "**/build": true,
+        "**/.ruff_cache": true
+    },
+    // Python Settings
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.analysis.typeCheckingMode": "basic",
+    // Svelte Settings
+    "svelte.enable-ts-plugin": true,
+    // Tailwind CSS
+    "tailwindCSS.includeLanguages": {
+        "svelte": "html"
+    }
+}

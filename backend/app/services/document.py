@@ -157,6 +157,7 @@ async def update_document(
         setattr(document, field, value)
 
     await db.flush()
+    await db.refresh(document)
     logger.info(f"Updated document {document_id}")
     return document
 
