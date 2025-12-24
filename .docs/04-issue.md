@@ -40,16 +40,16 @@
     | Email Delivery         | ต้อง verify ว่าส่งจริง
         |
 - [x] A landing page for explain product and service
-- [] C deployment github action -> coolify + vps
+- [] C deployment github webhook -> coolify + vps (Dockerfile พร้อมแล้ว)
 - [] D improve feature agent, tools,
 - [] D improve feature chat with document
 - [] F i18n support multi language(thai, eng, jp)
 - [] E data-testid สำหรับ E2E testing
-- [] F ai gen image
+- [x] F ai gen image (backend + frontend เสร็จแล้ว)
 
 
-  1. โชว์ RAG Pipeline - Document chunking, embedding, retrieval
-  2. โชว์ Multi-model - Switch ระหว่าง Gemini models (Pro/Flash)
-  3. โชว์ AI Agent - Custom tools, function calling
-  4. โชว์ Analytics - Token usage, model comparison
-  5. ai gen image
+  1. โชว์ RAG Pipeline - Document chunking, embedding, retrieval ✅
+  2. โชว์ Multi-model - Switch ระหว่าง Gemini models (Pro/Flash) ✅
+  3. โชว์ AI Agent - Custom tools, function calling ✅
+  4. โชว์ Analytics - Token usage, model comparison ✅
+  5. ai gen image ✅
