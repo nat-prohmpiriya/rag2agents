@@ -3,8 +3,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { ImagePlus, ArrowUp, Square, ChevronDown, Brain, X, Wrench, Globe, Check } from 'lucide-svelte';
+	import { ImagePlus, ArrowUp, Square, ChevronDown, Brain, X, Wrench, Globe, Check, FolderOpen } from 'lucide-svelte';
 	import type { ModelInfo } from '$lib/api/chat';
+	import type { Project } from '$lib/api/projects';
 
 	interface UploadedImage {
 		id: string;
@@ -22,9 +23,12 @@
 		thinkingEnabled = $bindable(false),
 		webSearchEnabled = $bindable(false),
 		images = $bindable<UploadedImage[]>([]),
+		projects = [],
+		selectedProjectId = $bindable<string | null>(null),
 		onSubmit,
 		onStop,
-		onModelSelect
+		onModelSelect,
+		onProjectSelect
 	} = $props<{
 		value?: string;
 		placeholder?: string;
@@ -35,10 +39,18 @@
 		thinkingEnabled?: boolean;
 		webSearchEnabled?: boolean;
 		images?: UploadedImage[];
+		projects?: Project[];
+		selectedProjectId?: string | null;
 		onSubmit?: (message: string, images?: UploadedImage[]) => void;
 		onStop?: () => void;
 		onModelSelect?: (model: ModelInfo) => void;
+		onProjectSelect?: (projectId: string | null) => void;
 	}>();
+
+	// Get selected project object
+	let selectedProject = $derived(
+		selectedProjectId ? projects.find((p) => p.id === selectedProjectId) ?? null : null
+	);
 
 	let fileInputRef: HTMLInputElement;
 
@@ -276,6 +288,59 @@
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
+
+				<!-- Project selector dropdown -->
+				{#if projects.length > 0}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="ghost"
+									class="h-10 px-3 rounded-xl transition-colors {selectedProject
+										? 'bg-primary/10 text-primary hover:bg-primary/20'
+										: 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+								>
+									<FolderOpen class="size-5" />
+									{#if selectedProject}
+										<span class="ml-1.5 max-w-[100px] truncate text-sm">{selectedProject.name}</span>
+									{/if}
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="start" class="w-[220px]">
+							<DropdownMenu.Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+								Project (RAG Context)
+							</DropdownMenu.Label>
+							<DropdownMenu.Item
+								class="flex cursor-pointer items-center justify-between gap-2"
+								onclick={() => onProjectSelect?.(null)}
+							>
+								<span class="text-muted-foreground">No Project</span>
+								{#if !selectedProjectId}
+									<Check class="size-4 text-primary" />
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							{#each projects as project (project.id)}
+								<DropdownMenu.Item
+									class="flex cursor-pointer items-center justify-between gap-2"
+									onclick={() => onProjectSelect?.(project.id)}
+								>
+									<div class="flex flex-col gap-0.5 min-w-0">
+										<span class="font-medium truncate">{project.name}</span>
+										{#if project.description}
+											<span class="text-xs text-muted-foreground line-clamp-1">{project.description}</span>
+										{/if}
+									</div>
+									{#if selectedProjectId === project.id}
+										<Check class="size-4 text-primary shrink-0" />
+									{/if}
+								</DropdownMenu.Item>
+							{/each}
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				{/if}
 			</div>
 
 			<!-- Right side: Model selector + Send button -->

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import LLMChat2 from '$lib/components/llm-chat2/LLMChat2.svelte';
-	import { chatStore } from '$lib/stores';
+	import { chatStore, projectStore } from '$lib/stores';
 
 	function handleConversationCreated(id: string) {
 		// Reload chat list and navigate to the new conversation
@@ -20,6 +20,7 @@
 </svelte:head>
 
 <LLMChat2
+	projectId={projectStore.currentProjectId}
 	onConversationCreated={handleConversationCreated}
 	onNewChat={handleNewChat}
 />

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { conversationsApi, type ConversationDetail } from '$lib/api/conversations';
 	import LLMChat2 from '$lib/components/llm-chat2/LLMChat2.svelte';
-	import { chatStore } from '$lib/stores';
+	import { chatStore, projectStore } from '$lib/stores';
 
 	// State
 	let conversationDetail = $state<ConversationDetail | null>(null);
@@ -81,6 +81,7 @@
 		conversationId={conversationId}
 		conversationTitle={conversationDetail.title || 'New conversation'}
 		initialMessages={conversationDetail.messages}
+		projectId={projectStore.currentProjectId}
 		onNewChat={handleNewChat}
 		onDelete={handleDelete}
 	/>

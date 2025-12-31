@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowDown } from 'lucide-svelte';
 	import type { Message as ApiMessage } from '$lib/api/conversations';
+	import { projectStore } from '$lib/stores';
 
 	interface Message {
 		id: string;
@@ -31,9 +32,11 @@
 		initialMessages?: ApiMessage[];
 		initialModel?: string;
 		agentSlug?: string;
+		projectId?: string | null;
 		onConversationCreated?: (id: string) => void;
 		onNewChat?: () => void;
 		onDelete?: () => void;
+		onProjectChange?: (projectId: string | null) => void;
 	}
 
 	let {
@@ -42,9 +45,11 @@
 		initialMessages = [],
 		initialModel,
 		agentSlug,
+		projectId = $bindable<string | null>(null),
 		onConversationCreated,
 		onNewChat,
-		onDelete
+		onDelete,
+		onProjectChange
 	}: Props = $props();
 
 	// State
@@ -81,10 +86,18 @@
 		}
 	});
 
-	// Load models on mount
+	// Load models and projects on mount
 	onMount(async () => {
 		await loadModels();
+		projectStore.initialize();
+		await projectStore.loadProjects();
 	});
+
+	function handleProjectSelect(newProjectId: string | null) {
+		projectId = newProjectId;
+		projectStore.selectProject(newProjectId);
+		onProjectChange?.(newProjectId);
+	}
 
 	async function loadModels() {
 		try {
@@ -174,6 +187,7 @@
 					model: selectedModel.id,
 					conversation_id: conversationId,
 					agent_slug: agentSlug,
+					project_id: projectId || undefined,
 					stream: true,
 					thinking: thinkingEnabled,
 					web_search: webSearchEnabled,
@@ -283,6 +297,7 @@
 					model: selectedModel.id,
 					conversation_id: conversationId,
 					agent_slug: agentSlug,
+					project_id: projectId || undefined,
 					stream: true,
 					skip_user_save: true
 				},
@@ -461,9 +476,12 @@
 			bind:thinkingEnabled
 			bind:webSearchEnabled
 			bind:images={uploadedImages}
+			projects={projectStore.projects}
+			bind:selectedProjectId={projectId}
 			onSubmit={handleSend}
 			onStop={handleStop}
 			onModelSelect={handleModelSelect}
+			onProjectSelect={handleProjectSelect}
 			loading={isLoading}
 			disabled={!selectedModel}
 		/>
