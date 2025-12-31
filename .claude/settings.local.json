@@ -3,7 +3,11 @@
     "allow": [
       "Bash(curl:*)",
       "Bash(ssh:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm run check:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "WebSearch"
     ]
   }
 }

@@ -236,14 +236,15 @@ Tasks แบ่งตาม Phase โดยเรียงลำดับตา�
 ---
 
 #### FE-027: Project selector in chat
-- [ ] เพิ่ม project dropdown ใน chat
+- [x] เพิ่ม project dropdown ใน chat
 
 **Description:** Dropdown เลือก project เพื่อใช้ documents ของ project นั้นสำหรับ RAG
-**Files:** Chat page
-**Reference:**
-- Select component: `frontend/src/lib/components/ui/select/`
-- Projects store: `frontend/src/lib/stores/projects.svelte.ts`
-**Done when:** Chat ใช้ project's documents สำหรับ RAG
+**Files:**
+- `frontend/src/lib/components/llm-chat2/ChatInput.svelte` (Project selector dropdown)
+- `frontend/src/lib/components/llm-chat2/LLMChat2.svelte` (projectId prop, project_id in request)
+- `frontend/src/routes/(app)/chat/+page.svelte`
+- `frontend/src/routes/(app)/chat/[id]/+page.svelte`
+**Status:** ✅ เสร็จแล้ว - Project dropdown ใน chat toolbar, เลือก project แล้วส่ง project_id ไปกับ chat request
 
 ---
 
@@ -315,13 +316,12 @@ Tasks แบ่งตาม Phase โดยเรียงลำดับตา�
 ---
 
 #### BE-059: Execution status SSE
-- [ ] Stream execution progress
+- [x] Stream execution progress
 
-**Description:** SSE endpoint สำหรับ stream workflow execution status แบบ real-time
-**Files:** `backend/app/routes/workflows.py`
-**Reference:** ดู SSE pattern จาก chat streaming (BE-015)
-**Events:** node_start, node_complete, error, done
-**Done when:** Frontend เห็น node status เปลี่ยนแบบ real-time
+**Files:**
+- `backend/app/routes/workflows.py` (workflow_chat_stream endpoint)
+- `backend/app/services/workflow_engine.py` (WorkflowEngineStream class)
+**Status:** ✅ เสร็จแล้ว - มี SSE events: node_id, node_type, status, done
 
 ---
 
@@ -370,7 +370,7 @@ Tasks แบ่งตาม Phase โดยเรียงลำดับตา�
 - [x] Save workflow - save to backend
 - [x] Execute workflow - trigger และ show progress
 - [x] Node config panel - `NodeConfigPanel.svelte`
-- [ ] Execution overlay - show node status real-time (BE-059 ยังไม่เสร็จ)
+- [x] Execution overlay - BE-059 SSE เสร็จแล้ว
 
 ---
 
@@ -502,9 +502,9 @@ Tasks แบ่งตาม Phase โดยเรียงลำดับตา�
 | 1 - Auth | 15 | 16 | 94% |
 | 2 - Chat | 17 | 17 | 100% ✅ |
 | 3 - Documents | 14 | 15 | 93% |
-| 4 - Projects | 13 | 14 | 93% |
+| 4 - Projects | 14 | 14 | 100% ✅ |
 | 5 - Agents | 15 | 16 | 94% |
-| 6 - Workflows | 13 | 14 | 93% |
+| 6 - Workflows | 14 | 14 | 100% ✅ |
 | 7 - Admin | 17 | 17 | 100% ✅ |
 | 8 - Notifications | 11 | 12 | 92% |
 
@@ -512,11 +512,9 @@ Tasks แบ่งตาม Phase โดยเรียงลำดับตา�
 
 1. **BE-001**: UserTier enum (เปลี่ยน tier จาก string เป็น Enum)
 2. **BE-042**: System agents YAML (pre-built agents config)
-3. **BE-059**: Workflow execution status SSE
-4. **FE-018**: Document upload UI (drag-drop component)
-5. **FE-020**: Document status polling
-6. **FE-027**: Project selector in chat
-7. **FE-078-079**: Error Tracking (Glitchtip/Sentry)
+3. **FE-018**: Document upload UI (drag-drop component)
+4. **FE-020**: Document status polling
+5. **FE-078-079**: Error Tracking (Glitchtip/Sentry)
 
 ---
 
