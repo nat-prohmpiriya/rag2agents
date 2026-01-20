@@ -32,6 +32,7 @@
 	let mainCanvas = $state<HTMLCanvasElement | null>(null);
 	let thumbnailContainer = $state<HTMLDivElement | null>(null);
 	let thumbnails = $state<{ page: number; canvas: HTMLCanvasElement }[]>([]);
+	let useNativeViewer = $state(false);
 
 	// Zoom levels
 	const MIN_SCALE = 0.5;
@@ -76,9 +77,15 @@
 		} catch (e) {
 			console.error('Failed to load PDF:', e);
 			error = e instanceof Error ? e.message : 'Failed to load PDF';
+			useNativeViewer = false; // Reset to show error with fallback option
 		} finally {
 			loading = false;
 		}
+	}
+
+	function switchToNativeViewer() {
+		useNativeViewer = true;
+		error = null;
 	}
 
 	async function renderPage(pageNum: number) {
@@ -196,95 +203,120 @@
 </script>
 
 <div class="flex h-full bg-muted/30">
-	<!-- Thumbnails Sidebar -->
-	<div
-		bind:this={thumbnailContainer}
-		class="w-20 shrink-0 overflow-y-auto border-r bg-background p-2 hidden md:block"
-	>
-		<div class="space-y-2">
-			{#each thumbnails as thumb (thumb.page)}
-				<button
-					onclick={() => handleThumbnailClick(thumb.page)}
-					class="relative block w-full rounded border-2 transition-colors {currentPage === thumb.page
-						? 'border-primary'
-						: 'border-transparent hover:border-muted-foreground/30'}"
-				>
-					<img
-						src={thumb.canvas.toDataURL()}
-						alt="Page {thumb.page}"
-						class="w-full"
-					/>
-					<span
-						class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-background/80 px-1.5 py-0.5 text-xs font-medium"
+	{#if useNativeViewer}
+		<!-- Native Browser PDF Viewer (fallback) -->
+		<div class="flex h-full flex-col flex-1 overflow-hidden">
+			<div class="flex items-center justify-between border-b bg-background px-4 py-2">
+				<span class="text-sm text-muted-foreground">Using Browser Viewer</span>
+				<Button variant="outline" size="sm" onclick={() => useNativeViewer = false}>
+					Try PDF.js Again
+				</Button>
+			</div>
+			<embed
+				src={url}
+				type="application/pdf"
+				class="flex-1 w-full h-full"
+			/>
+		</div>
+	{:else}
+		<!-- Thumbnails Sidebar -->
+		<div
+			bind:this={thumbnailContainer}
+			class="w-20 shrink-0 overflow-y-auto border-r bg-background p-2 hidden md:block"
+		>
+			<div class="space-y-2">
+				{#each thumbnails as thumb (thumb.page)}
+					<button
+						onclick={() => handleThumbnailClick(thumb.page)}
+						class="relative block w-full rounded border-2 transition-colors {currentPage === thumb.page
+							? 'border-primary'
+							: 'border-transparent hover:border-muted-foreground/30'}"
 					>
-						{thumb.page}
-					</span>
-				</button>
-			{/each}
-		</div>
-	</div>
-
-	<!-- Main Content -->
-	<div class="flex flex-1 flex-col overflow-hidden">
-		<!-- Toolbar -->
-		<div class="flex items-center justify-between border-b bg-background px-4 py-2">
-			<div class="flex items-center gap-2">
-				<Button variant="ghost" size="icon" onclick={prevPage} disabled={currentPage <= 1}>
-					<ChevronLeft class="size-4" />
-				</Button>
-				<div class="flex items-center gap-1">
-					<Input
-						type="number"
-						class="h-8 w-16 text-center"
-						bind:value={pageInputValue}
-						onchange={handlePageInput}
-						min="1"
-						max={totalPages}
-					/>
-					<span class="text-sm text-muted-foreground">/ {totalPages}</span>
-				</div>
-				<Button variant="ghost" size="icon" onclick={nextPage} disabled={currentPage >= totalPages}>
-					<ChevronRight class="size-4" />
-				</Button>
-			</div>
-
-			<div class="flex items-center gap-2">
-				<Button variant="ghost" size="icon" onclick={zoomOut} disabled={scale <= MIN_SCALE}>
-					<ZoomOut class="size-4" />
-				</Button>
-				<span class="min-w-12 text-center text-sm">{Math.round(scale * 100)}%</span>
-				<Button variant="ghost" size="icon" onclick={zoomIn} disabled={scale >= MAX_SCALE}>
-					<ZoomIn class="size-4" />
-				</Button>
-				<Button variant="ghost" size="icon" onclick={rotate}>
-					<RotateCw class="size-4" />
-				</Button>
+						<img
+							src={thumb.canvas.toDataURL()}
+							alt="Page {thumb.page}"
+							class="w-full"
+						/>
+						<span
+							class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-background/80 px-1.5 py-0.5 text-xs font-medium"
+						>
+							{thumb.page}
+						</span>
+					</button>
+				{/each}
 			</div>
 		</div>
 
-		<!-- PDF Canvas Area -->
-		<div class="flex-1 overflow-auto p-4">
-			{#if loading}
-				<div class="flex h-full items-center justify-center">
-					<div class="size-8 animate-spin rounded-full border-4 border-muted border-t-primary"></div>
-				</div>
-			{:else if error}
-				<div class="flex h-full items-center justify-center">
-					<div class="text-center">
-						<p class="text-destructive">{error}</p>
-						<Button variant="outline" class="mt-4" onclick={loadPDF}>
-							Retry
-						</Button>
+		<!-- Main Content -->
+		<div class="flex flex-1 flex-col overflow-hidden">
+			<!-- Toolbar -->
+			<div class="flex items-center justify-between border-b bg-background px-4 py-2">
+				<div class="flex items-center gap-2">
+					<Button variant="ghost" size="icon" onclick={prevPage} disabled={currentPage <= 1}>
+						<ChevronLeft class="size-4" />
+					</Button>
+					<div class="flex items-center gap-1">
+						<Input
+							type="number"
+							class="h-8 w-16 text-center"
+							bind:value={pageInputValue}
+							onchange={handlePageInput}
+							min="1"
+							max={totalPages}
+						/>
+						<span class="text-sm text-muted-foreground">/ {totalPages}</span>
 					</div>
+					<Button variant="ghost" size="icon" onclick={nextPage} disabled={currentPage >= totalPages}>
+						<ChevronRight class="size-4" />
+					</Button>
 				</div>
-			{:else}
-				<div class="flex justify-center">
-					<canvas
-						bind:this={mainCanvas}
-						class="shadow-lg"
-					></canvas>
+
+				<div class="flex items-center gap-2">
+					<Button variant="ghost" size="icon" onclick={zoomOut} disabled={scale <= MIN_SCALE}>
+						<ZoomOut class="size-4" />
+					</Button>
+					<span class="min-w-12 text-center text-sm">{Math.round(scale * 100)}%</span>
+					<Button variant="ghost" size="icon" onclick={zoomIn} disabled={scale >= MAX_SCALE}>
+						<ZoomIn class="size-4" />
+					</Button>
+					<Button variant="ghost" size="icon" onclick={rotate}>
+						<RotateCw class="size-4" />
+					</Button>
 				</div>
-			{/if}
+			</div>
+
+			<!-- PDF Canvas Area -->
+			<div class="flex-1 overflow-auto p-4">
+				{#if loading}
+					<div class="flex h-full items-center justify-center">
+						<div class="size-8 animate-spin rounded-full border-4 border-muted border-t-primary"></div>
+					</div>
+				{:else if error}
+					<div class="flex h-full items-center justify-center">
+						<div class="text-center max-w-md">
+							<p class="text-destructive mb-2">{error}</p>
+							<p class="text-sm text-muted-foreground mb-4">
+								This PDF may have a non-standard structure. Try using the browser's native viewer.
+							</p>
+							<div class="flex gap-2 justify-center">
+								<Button variant="outline" onclick={loadPDF}>
+									Retry
+								</Button>
+								<Button onclick={switchToNativeViewer}>
+									Use Browser Viewer
+								</Button>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<div class="flex justify-center">
+						<canvas
+							bind:this={mainCanvas}
+							class="shadow-lg"
+						></canvas>
+					</div>
+				{/if}
+			</div>
 		</div>
-	</div>
+	{/if}
 </div>
