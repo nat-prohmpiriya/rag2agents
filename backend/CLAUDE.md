@@ -56,6 +56,40 @@ async def create_user(db: AsyncSession, data: UserCreate) -> User:
 | `models/` | SQLAlchemy ORM |
 | `schemas/` | Pydantic validation |
 
+## Storage
+
+Document files are stored using the configured storage service:
+
+| Type | Description | Persistence |
+|------|-------------|-------------|
+| `local` | Local filesystem (`./uploads`) | ❌ Lost on container restart |
+| `minio` | MinIO S3-compatible storage | ✅ Persistent |
+
+**Important**: Production MUST use `STORAGE_TYPE=minio` to prevent file loss on container restart.
+
+### Configuration
+
+```bash
+# For production (MinIO)
+STORAGE_TYPE=minio
+MINIO_ENDPOINT=minio.dackbox.com
+MINIO_ACCESS_KEY=your-access-key
+MINIO_SECRET_KEY=your-secret-key
+MINIO_DOCUMENTS_BUCKET=ragagent-documents
+MINIO_SECURE=true
+```
+
+### Storage Service
+
+```python
+from app.services.storage import get_storage_service
+
+storage = get_storage_service()
+path = await storage.upload(file_bytes, filename, user_id)
+content = await storage.download(path)
+await storage.delete(path)
+```
+
 ## Commands
 
 ```bash

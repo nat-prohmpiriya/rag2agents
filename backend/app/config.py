@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     stripe_publishable_key: str = ""
 
     # Storage
-    storage_type: str = "local"
+    storage_type: str = "local"  # "local" or "minio"
     storage_local_path: str = "./uploads"
 
     # Static files (frontend)
@@ -89,7 +89,8 @@ class Settings(BaseSettings):
     minio_endpoint: str = ""
     minio_access_key: str = ""
     minio_secret_key: str = ""
-    minio_bucket: str = "ragagent-images"
+    minio_bucket: str = "ragagent-images"  # For AI-generated images
+    minio_documents_bucket: str = "ragagent-documents"  # For uploaded documents
     minio_secure: bool = True
 
     @property

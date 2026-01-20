@@ -10,7 +10,16 @@
       "WebSearch",
       "Bash(npm run build)",
       "Bash(rsync:*)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(git -C /Users/prohmpiriya_phonumnuaisuk/Desktop/project-box-2/rag2agents status)",
+      "Bash(git -C /Users/prohmpiriya_phonumnuaisuk/Desktop/project-box-2/rag2agents diff --stat frontend/src/lib/components/pdf-viewer/PDFViewer.svelte)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__puppeteer__puppeteer_fill",
+      "mcp__puppeteer__puppeteer_click",
+      "mcp__puppeteer__puppeteer_evaluate",
+      "Bash(uv run python:*)",
+      "Bash(uv run pytest:*)"
     ]
   }
 }

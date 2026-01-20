@@ -3,10 +3,13 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
+from io import BytesIO
 from pathlib import Path
 
 import aiofiles
 import aiofiles.os
+from minio import Minio
+from minio.error import S3Error
 
 from app.config import settings
 from app.core.telemetry import traced
@@ -169,6 +172,136 @@ class LocalStorageService(StorageService):
         return await aiofiles.os.path.exists(file_path)
 
 
+class MinIOStorageService(StorageService):
+    """MinIO (S3-compatible) storage implementation for documents."""
+
+    def __init__(
+        self,
+        endpoint: str | None = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        bucket: str | None = None,
+        secure: bool | None = None,
+    ):
+        """
+        Initialize MinIO storage service.
+
+        Args:
+            endpoint: MinIO server endpoint (defaults to settings.minio_endpoint)
+            access_key: Access key (defaults to settings.minio_access_key)
+            secret_key: Secret key (defaults to settings.minio_secret_key)
+            bucket: Bucket name (defaults to settings.minio_documents_bucket)
+            secure: Use HTTPS (defaults to settings.minio_secure)
+        """
+        self.endpoint = endpoint or settings.minio_endpoint
+        self.access_key = access_key or settings.minio_access_key
+        self.secret_key = secret_key or settings.minio_secret_key
+        self.bucket = bucket or settings.minio_documents_bucket
+        self.secure = secure if secure is not None else settings.minio_secure
+
+        if not all([self.endpoint, self.access_key, self.secret_key, self.bucket]):
+            raise ValueError(
+                "MinIO storage requires minio_endpoint, minio_access_key, "
+                "minio_secret_key, and minio_documents_bucket to be configured"
+            )
+
+        # Initialize MinIO client (lazy loading, created on first use)
+        self._client: Minio | None = None
+
+    def _get_client(self) -> Minio:
+        """Get or create MinIO client."""
+        if self._client is None:
+            self._client = Minio(
+                endpoint=self.endpoint,
+                access_key=self.access_key,
+                secret_key=self.secret_key,
+                secure=self.secure,
+            )
+            logger.info(f"MinIO client initialized for documents: {self.endpoint}/{self.bucket}")
+        return self._client
+
+    def _ensure_bucket_exists(self) -> None:
+        """Ensure the bucket exists, create if not."""
+        client = self._get_client()
+        try:
+            if not client.bucket_exists(self.bucket):
+                client.make_bucket(self.bucket)
+                logger.info(f"Created MinIO bucket: {self.bucket}")
+        except S3Error as e:
+            logger.error(f"Failed to ensure bucket exists: {e}")
+            raise
+
+    @traced()
+    async def upload(self, file: bytes, filename: str, user_id: uuid.UUID) -> str:
+        """Upload file to MinIO."""
+        self._ensure_bucket_exists()
+        client = self._get_client()
+
+        # Create object path: documents/{user_id}/{uuid}_{filename}
+        file_uuid = uuid.uuid4()
+        safe_filename = f"{file_uuid}_{filename}"
+        object_name = f"documents/{user_id}/{safe_filename}"
+
+        try:
+            client.put_object(
+                bucket_name=self.bucket,
+                object_name=object_name,
+                data=BytesIO(file),
+                length=len(file),
+            )
+            logger.info(f"Uploaded file to MinIO: {self.bucket}/{object_name}")
+            return object_name
+        except S3Error as e:
+            logger.error(f"Failed to upload to MinIO: {e}")
+            raise
+
+    @traced()
+    async def download(self, path: str) -> bytes:
+        """Download file from MinIO."""
+        client = self._get_client()
+
+        try:
+            response = client.get_object(bucket_name=self.bucket, object_name=path)
+            data = response.read()
+            response.close()
+            response.release_conn()
+            return data
+        except S3Error as e:
+            if e.code == "NoSuchKey":
+                raise FileNotFoundError(f"File not found in MinIO: {path}") from e
+            logger.error(f"Failed to download from MinIO: {e}")
+            raise
+
+    @traced()
+    async def delete(self, path: str) -> bool:
+        """Delete file from MinIO."""
+        client = self._get_client()
+
+        try:
+            client.remove_object(bucket_name=self.bucket, object_name=path)
+            logger.info(f"Deleted file from MinIO: {self.bucket}/{path}")
+            return True
+        except S3Error as e:
+            if e.code == "NoSuchKey":
+                return False
+            logger.error(f"Failed to delete from MinIO: {e}")
+            return False
+
+    @traced()
+    async def exists(self, path: str) -> bool:
+        """Check if file exists in MinIO."""
+        client = self._get_client()
+
+        try:
+            client.stat_object(bucket_name=self.bucket, object_name=path)
+            return True
+        except S3Error as e:
+            if e.code == "NoSuchKey":
+                return False
+            logger.error(f"Failed to check file existence in MinIO: {e}")
+            return False
+
+
 # Storage service singleton
 _storage_service: StorageService | None = None
 
@@ -185,6 +318,8 @@ def get_storage_service() -> StorageService:
     if _storage_service is None:
         if settings.storage_type == "local":
             _storage_service = LocalStorageService()
+        elif settings.storage_type == "minio":
+            _storage_service = MinIOStorageService()
         else:
             raise ValueError(f"Unknown storage type: {settings.storage_type}")
 
