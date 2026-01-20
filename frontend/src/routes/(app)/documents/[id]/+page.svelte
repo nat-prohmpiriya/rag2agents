@@ -8,7 +8,12 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowLeft, FileText, MessageSquare, PanelRightClose, PanelRight } from 'lucide-svelte';
 
-	const API_BASE = import.meta.env.VITE_API_URL || '';
+	// Get API base URL - use absolute path in production to avoid proxy issues
+	const getApiUrl = (path: string) => {
+		if (typeof window === 'undefined') return `/api/v1${path}`;
+		// Use absolute URL with current origin to ensure it goes through proxy correctly
+		return `${window.location.origin}/api/v1${path}`;
+	};
 
 	let document = $state<DocumentDetail | null>(null);
 	let loading = $state(true);
@@ -18,7 +23,7 @@
 	let isResizing = $state(false);
 
 	let documentId = $derived($page.params.id);
-	let pdfUrl = $derived(document ? `${API_BASE}/documents/${document.id}/file` : '');
+	let pdfUrl = $derived(document ? getApiUrl(`/documents/${document.id}/file`) : '');
 	let isPdf = $derived(document?.file_type === 'pdf');
 
 	onMount(async () => {
