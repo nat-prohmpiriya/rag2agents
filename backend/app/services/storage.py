@@ -312,15 +312,12 @@ def get_storage_service() -> StorageService:
 
     Returns:
         StorageService instance based on configuration
+
+    Note: Creates a new instance each time to ensure env var changes are picked up.
     """
-    global _storage_service
-
-    if _storage_service is None:
-        if settings.storage_type == "local":
-            _storage_service = LocalStorageService()
-        elif settings.storage_type == "minio":
-            _storage_service = MinIOStorageService()
-        else:
-            raise ValueError(f"Unknown storage type: {settings.storage_type}")
-
-    return _storage_service
+    if settings.storage_type == "local":
+        return LocalStorageService()
+    elif settings.storage_type == "minio":
+        return MinIOStorageService()
+    else:
+        raise ValueError(f"Unknown storage type: {settings.storage_type}")
