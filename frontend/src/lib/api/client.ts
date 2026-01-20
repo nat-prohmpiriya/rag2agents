@@ -1,10 +1,56 @@
 import { ApiException, type BaseResponse } from '$lib/types';
+import { authApi } from './auth';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+
+// Token refresh state to prevent multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 
 function getStoredToken(): string | null {
 	if (typeof window === 'undefined') return null;
 	return localStorage.getItem('access_token');
+}
+
+/**
+ * Refresh access token and return success status
+ */
+async function refreshAccessToken(): Promise<boolean> {
+	try {
+		await authApi.refresh();
+		return true;
+	} catch {
+		// Refresh failed - clear tokens and redirect to login
+		if (typeof window !== 'undefined') {
+			localStorage.removeItem('access_token');
+			localStorage.removeItem('refresh_token');
+			// Only redirect if not already on login page
+			if (!window.location.pathname.includes('/login')) {
+				window.location.href = '/login';
+			}
+		}
+		return false;
+	}
+}
+
+/**
+ * Ensure token is fresh, returns true if we should retry the request
+ */
+async function ensureValidToken(): Promise<boolean> {
+	if (isRefreshing) {
+		// Wait for ongoing refresh
+		await refreshPromise;
+		return getStoredToken() !== null;
+	}
+
+	isRefreshing = true;
+	refreshPromise = refreshAccessToken().finally(() => {
+		isRefreshing = false;
+		refreshPromise = null;
+	});
+
+	const success = await refreshPromise;
+	return success;
 }
 
 export function setStoredToken(token: string): void {
@@ -31,6 +77,7 @@ export function getRefreshToken(): string | null {
 /**
  * Fetch wrapper for API calls with authentication
  * Automatically unwraps BaseResponse<T> to return T
+ * Auto-refreshes token on 401 response
  */
 export async function fetchApi<T>(
 	endpoint: string,
@@ -48,6 +95,34 @@ export async function fetchApi<T>(
 	});
 
 	if (!response.ok) {
+		// Handle 401 Unauthorized - try to refresh token
+		if (response.status === 401 && getRefreshToken()) {
+			const shouldRetry = await ensureValidToken();
+			if (shouldRetry) {
+				// Retry the request with new token
+				const newToken = getStoredToken();
+				const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+					...options,
+					headers: {
+						'Content-Type': 'application/json',
+						...(newToken && { Authorization: `Bearer ${newToken}` }),
+						...options?.headers,
+					},
+				});
+
+				if (retryResponse.ok) {
+					if (retryResponse.status === 204) {
+						return undefined as T;
+					}
+					const json = await retryResponse.json();
+					if ('data' in json && 'trace_id' in json) {
+						return (json as BaseResponse<T>).data;
+					}
+					return json as T;
+				}
+			}
+		}
+
 		let message = 'An error occurred';
 		let traceId: string | undefined;
 		let detail: string | undefined;
@@ -85,6 +160,7 @@ export async function fetchApi<T>(
 
 /**
  * Fetch wrapper that returns the full BaseResponse (including trace_id)
+ * Auto-refreshes token on 401 response
  */
 export async function fetchApiWithTrace<T>(
 	endpoint: string,
@@ -102,6 +178,27 @@ export async function fetchApiWithTrace<T>(
 	});
 
 	if (!response.ok) {
+		// Handle 401 Unauthorized - try to refresh token
+		if (response.status === 401 && getRefreshToken()) {
+			const shouldRetry = await ensureValidToken();
+			if (shouldRetry) {
+				// Retry the request with new token
+				const newToken = getStoredToken();
+				const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+					...options,
+					headers: {
+						'Content-Type': 'application/json',
+						...(newToken && { Authorization: `Bearer ${newToken}` }),
+						...options?.headers,
+					},
+				});
+
+				if (retryResponse.ok) {
+					return retryResponse.json();
+				}
+			}
+		}
+
 		let message = 'An error occurred';
 		let traceId: string | undefined;
 		let detail: string | undefined;
@@ -125,6 +222,7 @@ export async function fetchApiWithTrace<T>(
 /**
  * Fetch wrapper for streaming responses (SSE/ReadableStream)
  * Returns trace_id from X-Trace-Id header
+ * Auto-refreshes token on 401 response
  */
 export async function fetchStream(
 	endpoint: string,
@@ -143,6 +241,41 @@ export async function fetchStream(
 	});
 
 	if (!response.ok) {
+		// Handle 401 Unauthorized - try to refresh token
+		if (response.status === 401 && getRefreshToken()) {
+			const shouldRetry = await ensureValidToken();
+			if (shouldRetry) {
+				// Retry the request with new token
+				const newToken = getStoredToken();
+				const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+					...options,
+					headers: {
+						'Content-Type': 'application/json',
+						...(newToken && { Authorization: `Bearer ${newToken}` }),
+						...options?.headers,
+					},
+				});
+
+				if (retryResponse.ok) {
+					const traceId = retryResponse.headers.get('X-Trace-Id');
+					const reader = retryResponse.body?.getReader();
+					const decoder = new TextDecoder();
+
+					if (!reader) {
+						throw new Error('Response body is not readable');
+					}
+
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						onChunk(decoder.decode(value, { stream: true }));
+					}
+
+					return { traceId };
+				}
+			}
+		}
+
 		let message = 'An error occurred';
 		let traceId: string | undefined;
 		try {
@@ -177,63 +310,80 @@ export async function fetchStream(
 
 /**
  * Upload file with progress tracking
+ * Auto-refreshes token on 401 response
  */
 export async function uploadFile<T>(
 	endpoint: string,
 	file: File,
 	onProgress?: (percent: number) => void
 ): Promise<T> {
+	const doUpload = (token: string | null): Promise<T> => {
+		return new Promise((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener('progress', (event) => {
+				if (event.lengthComputable && onProgress) {
+					const percent = Math.round((event.loaded / event.total) * 100);
+					onProgress(percent);
+				}
+			});
+
+			xhr.addEventListener('load', () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					try {
+						const json = JSON.parse(xhr.responseText);
+						// Unwrap BaseResponse
+						if ('data' in json && 'trace_id' in json) {
+							resolve(json.data);
+						} else {
+							resolve(json);
+						}
+					} catch {
+						resolve(xhr.responseText as T);
+					}
+				} else {
+					let message = 'Upload failed';
+					let traceId: string | undefined;
+					try {
+						const errorData = JSON.parse(xhr.responseText);
+						// Prefer detail over error for more meaningful messages
+						message = errorData.detail || errorData.error || errorData.message || message;
+						traceId = errorData.trace_id;
+					} catch {
+						message = xhr.responseText || message;
+					}
+					reject(new ApiException(xhr.status, message, traceId));
+				}
+			});
+
+			xhr.addEventListener('error', () => {
+				reject(new ApiException(0, 'Network error during upload'));
+			});
+
+			const formData = new FormData();
+			formData.append('file', file);
+
+			xhr.open('POST', `${API_BASE}${endpoint}`);
+			if (token) {
+				xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+			}
+			xhr.send(formData);
+		});
+	};
+
 	const token = getStoredToken();
 
-	return new Promise((resolve, reject) => {
-		const xhr = new XMLHttpRequest();
-
-		xhr.upload.addEventListener('progress', (event) => {
-			if (event.lengthComputable && onProgress) {
-				const percent = Math.round((event.loaded / event.total) * 100);
-				onProgress(percent);
+	try {
+		return await doUpload(token);
+	} catch (error) {
+		// Handle 401 Unauthorized - try to refresh token and retry
+		if (error instanceof ApiException && error.status === 401 && getRefreshToken()) {
+			const shouldRetry = await ensureValidToken();
+			if (shouldRetry) {
+				const newToken = getStoredToken();
+				return doUpload(newToken);
 			}
-		});
-
-		xhr.addEventListener('load', () => {
-			if (xhr.status >= 200 && xhr.status < 300) {
-				try {
-					const json = JSON.parse(xhr.responseText);
-					// Unwrap BaseResponse
-					if ('data' in json && 'trace_id' in json) {
-						resolve(json.data);
-					} else {
-						resolve(json);
-					}
-				} catch {
-					resolve(xhr.responseText as T);
-				}
-			} else {
-				let message = 'Upload failed';
-				let traceId: string | undefined;
-				try {
-					const errorData = JSON.parse(xhr.responseText);
-					// Prefer detail over error for more meaningful messages
-					message = errorData.detail || errorData.error || errorData.message || message;
-					traceId = errorData.trace_id;
-				} catch {
-					message = xhr.responseText || message;
-				}
-				reject(new ApiException(xhr.status, message, traceId));
-			}
-		});
-
-		xhr.addEventListener('error', () => {
-			reject(new ApiException(0, 'Network error during upload'));
-		});
-
-		const formData = new FormData();
-		formData.append('file', file);
-
-		xhr.open('POST', `${API_BASE}${endpoint}`);
-		if (token) {
-			xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 		}
-		xhr.send(formData);
-	});
+		throw error;
+	}
 }
